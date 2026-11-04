@@ -2,11 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Models\RoomType;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\RoomType
+ * @mixin RoomType
  */
 class RoomTypeResource extends JsonResource
 {
@@ -27,6 +28,7 @@ class RoomTypeResource extends JsonResource
             'slug' => $this->slug,
             'description' => $this->description,
             'images' => $this->images ?? [],
+            'panoramaUrl' => $this->panoramaUrl(),
             'bedType' => $this->bed_type,
             'roomSize' => $this->room_size,
             'maxAdults' => $this->max_adults,

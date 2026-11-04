@@ -70,6 +70,7 @@ class CatalogController extends Controller
                     'id', 'hotel_id', 'name', 'slug', 'description',
                     'bed_type', 'room_size', 'max_adults', 'max_children',
                     'max_guests', 'amenities', 'base_inventory', 'status',
+                    'panorama_path',
                 ])
                 ->selectRaw($this->boundedJsonImagesSql('images'))
                 ->where('status', 'published')

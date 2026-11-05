@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\CorsOrigins;
+
 return [
 
     /*
@@ -10,24 +12,20 @@ return [
     | greyon-engine routes live on the web stack (/login, /admin/*, /catalog…).
     | Quasar may run on any localhost port (9000 default, 9400 in local tests).
     |
+    | Room panoramas are static files under /storage/uploads/rooms. nginx
+    | serves those directly, so it does not see this middleware. Boot
+    | renders the same allowlist into /etc/nginx-storage-cors.conf
+    | (`php artisan storage:cors-map`). Keep both in App\Support\CorsOrigins.
+    |
     */
 
     'paths' => ['*'],
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => array_values(array_filter(array_unique([
-        env('FRONTEND_URL'),
-        'http://localhost:9000',
-        'http://127.0.0.1:9000',
-        'http://localhost:9400',
-        'http://127.0.0.1:9400',
-    ]))),
+    'allowed_origins' => CorsOrigins::allowed(),
 
-    'allowed_origins_patterns' => [
-        '#^http://localhost:\d+$#',
-        '#^http://127\.0\.0\.1:\d+$#',
-    ],
+    'allowed_origins_patterns' => CorsOrigins::patterns(),
 
     'allowed_headers' => ['*'],
 

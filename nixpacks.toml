@@ -51,6 +51,9 @@ chmod -R 775 /app/storage /app/bootstrap/cache
 
 php /app/artisan storage:link --force --no-interaction || true
 php /app/artisan config:cache --no-interaction || true
+# /storage is served by nginx try_files and never hits Laravel CORS.
+# Render config/cors.php into the map nginx includes below.
+php /app/artisan storage:cors-map --path=/etc/nginx-storage-cors.conf --no-interaction
 php /app/artisan route:cache --no-interaction || true
 php /app/artisan view:cache --no-interaction || true
 
@@ -150,6 +153,7 @@ events {
 
 http {
     include    $!{nginx}/conf/mime.types;
+    include /etc/nginx-storage-cors.conf;
     index    index.html index.htm index.php;
 
     default_type application/octet-stream;
@@ -179,6 +183,31 @@ http {
         charset utf-8;
 
         location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        # Panoramas (uploads/rooms) are fetched cross-origin by WebGL.
+        # Reflect the allowlist from config/cors.php — no wildcard.
+        # private: a shared cache must not pin one origin's ACAO onto another.
+        location ^~ /storage/uploads/rooms/ {
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header Vary "Origin" always;
+            add_header Cache-Control "private, max-age=14400" always;
+            add_header Access-Control-Allow-Origin $storage_cors_origin always;
+            add_header Access-Control-Allow-Credentials $storage_cors_credentials always;
+
+            if ($request_method = OPTIONS) {
+                add_header X-Content-Type-Options "nosniff" always;
+                add_header Vary "Origin" always;
+                add_header Cache-Control "private, max-age=14400" always;
+                add_header Access-Control-Allow-Origin $storage_cors_origin always;
+                add_header Access-Control-Allow-Credentials $storage_cors_credentials always;
+                add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
+                add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
+                add_header Content-Length 0;
+                return 204;
+            }
+
             try_files $uri $uri/ /index.php?$query_string;
         }
 

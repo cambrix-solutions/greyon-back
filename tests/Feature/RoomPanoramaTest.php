@@ -232,6 +232,34 @@ class RoomPanoramaTest extends TestCase
         $this->getJson('/catalog')->assertJsonPath('roomTypes.0.panoramaUrl', $this->publicUrl($path));
     }
 
+    public function test_post_with_method_patch_still_replaces_panorama(): void
+    {
+        $hotel = $this->hotel();
+        $this->actingAs($this->dev(), 'developer');
+
+        $id = $this->post('/admin/room-types', [
+            'hotelId' => $hotel->id,
+            'name' => 'Suite',
+            'slug' => 'suite-spoof',
+            'status' => 'published',
+            'panorama' => UploadedFile::fake()->image('first.jpg', 2000, 1000),
+        ], self::JSON)->assertCreated()->json('roomType.id');
+
+        $old = RoomType::findOrFail($id)->panorama_path;
+
+        $replaced = $this->post("/admin/room-types/{$id}", [
+            '_method' => 'PATCH',
+            'panorama' => UploadedFile::fake()->image('second.webp', 2048, 1024),
+        ], self::JSON)->assertOk();
+
+        $path = RoomType::findOrFail($id)->panorama_path;
+        $this->assertNotSame($old, $path);
+        $this->assertStringEndsWith('.webp', $path);
+        Storage::disk('public')->assertMissing($old);
+        Storage::disk('public')->assertExists($path);
+        $replaced->assertJsonPath('roomType.panoramaUrl', $this->publicUrl($path));
+    }
+
     public function test_remove_panorama_clears_url_and_deletes_file(): void
     {
         $hotel = $this->hotel();

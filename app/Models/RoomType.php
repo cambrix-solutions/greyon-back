@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * A room category under a Hotel ("Deluxe King", "Standard Twin", ...)
@@ -21,6 +22,7 @@ class RoomType extends Model
         'slug',
         'description',
         'images',
+        'panorama_path',
         'bed_type',
         'room_size',
         'max_adults',
@@ -50,6 +52,29 @@ class RoomType extends Model
     public function hotel(): BelongsTo
     {
         return $this->belongsTo(Hotel::class);
+    }
+
+    /**
+     * Absolute URL for the optional 360° panorama, or null when unset.
+     * `panorama_path` may be a public-disk path (uploads/rooms/...) or an http(s) URL.
+     */
+    public function panoramaUrl(): ?string
+    {
+        $path = $this->panorama_path;
+        if (! is_string($path) || $path === '') {
+            return null;
+        }
+
+        if (preg_match('#^https?://#i', $path)) {
+            return $path;
+        }
+
+        $url = Storage::disk('public')->url(ltrim($path, '/'));
+        if (! str_starts_with($url, 'http')) {
+            $url = rtrim((string) config('app.url'), '/').'/'.ltrim($url, '/');
+        }
+
+        return $url;
     }
 
     /**

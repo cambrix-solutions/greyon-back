@@ -12,16 +12,15 @@ use Illuminate\Database\Seeder;
  * System packages an admin can be assigned (see AdminSeeder). System
  * packages can't be deleted (App\Http\Controllers\Developer\PackageController).
  *
- * Shape mirrors the live local DB, with destination *create* denied on
- * every seeded seat (Admin + city managers):
+ * Shape mirrors the live local DB:
  *
  *   - `Admin` — main org seat. Every admin feature except `settings`,
- *     plus public product surfaces. Caps: locations 0 (no new
- *     destinations), 3 hotels per location, 3 managers. Permission
- *     `locations_create` is intentionally withheld.
+ *     plus public product surfaces. Caps: locations, hotels per
+ *     location, and managers are unlimited (`null`). Permission
+ *     `locations_create` is granted.
  *   - `Manager · <City>` × 3 — same feature set as live Manager rows,
  *     same "no create destination" rule (`locations` limit 0, no
- *     `locations_create`). Hotels still capped at 3 per location.
+ *     `locations_create`). Hotels per location are unlimited (`null`).
  *
  * Permissions are derived from the package's features, minus any
  * explicitly denied keys.
@@ -43,17 +42,16 @@ class PackageSeeder extends Seeder
 
         $this->makePackage(
             'Admin',
-            'Full admin-panel access — can manage existing destinations and add up to 3 hotels each; cannot create new destinations.',
+            'Full admin-panel access — can create destinations, hotels, and managers without a quantity cap.',
             null,
             ['admin'],
             $adminFeatureKeys,
-            limits: ['locations' => 0, 'hotels_per_location' => 3, 'managers' => 3],
-            denyPermissionKeys: ['locations_create'],
+            limits: ['locations' => null, 'hotels_per_location' => null, 'managers' => null],
         );
 
         // City manager seats — feature set taken from live Manager · *
         // rows (enquiries / media / features included; no public keys,
-        // no users / settings). Destination create denied same as Admin.
+        // no users / settings). Destination create stays denied (Admin may now create).
         // `media` is intentional: product (Seth, 2026-09-22) — Managers keep
         // scoped Media when the library is fully built (not Admin-only).
         $managerFeatureKeys = [
@@ -72,12 +70,12 @@ class PackageSeeder extends Seeder
             'services',
             'products',
         ];
-        $managerLimits = ['locations' => 0, 'hotels_per_location' => 3];
+        $managerLimits = ['locations' => 0, 'hotels_per_location' => null];
 
         foreach (['Phnom Penh', 'Kampot', 'Sihanoukville'] as $city) {
             $this->makePackage(
                 "Manager · {$city}",
-                "Location-scoped content, rooms, rates, bookings and news for {$city} — can add up to 3 hotels here, cannot create new destinations.",
+                "Location-scoped content, rooms, rates, bookings and news for {$city} — can add hotels here without a quantity cap, cannot create new destinations.",
                 null,
                 ['manager'],
                 $managerFeatureKeys,
@@ -90,7 +88,7 @@ class PackageSeeder extends Seeder
     /**
      * @param  list<string>  $roleNames
      * @param  list<string>  $featureKeys
-     * @param  array<string, int>  $limits  resourceKey => maxCount
+     * @param  array<string, int|null>  $limits  resourceKey => maxCount (null = unlimited)
      * @param  list<string>  $denyPermissionKeys  withheld even if under a granted feature
      */
     private function makePackage(

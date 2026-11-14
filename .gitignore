@@ -35,3 +35,6 @@ Thumbs.db
 
 # Internal/client-facing docs — not shared with the team repo.
 /greyon-documentation
+
+# Claude app auto-saved copies of delivered files (real copies live in greyon-documentation).
+/Claude outputs

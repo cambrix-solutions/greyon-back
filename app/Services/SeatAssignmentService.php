@@ -58,13 +58,21 @@ class SeatAssignmentService
             $locationIds = array_values(array_unique($entry['locationIds'] ?? []));
             $hotelIds = array_values(array_unique($entry['hotelIds'] ?? []));
 
-            if ($roleScopes->contains('location') && $locationIds === []) {
+            $needsLocation = $roleScopes->contains('location');
+            $needsHotel = $roleScopes->contains('hotel');
+
+            if ($needsLocation && $needsHotel) {
+                // A custom role: it works wherever the person is placed.
+                if ($locationIds === [] && $hotelIds === []) {
+                    throw ValidationException::withMessages([
+                        'packages' => "Pick at least one destination or hotel for seat \"{$package->name}\".",
+                    ]);
+                }
+            } elseif ($needsLocation && $locationIds === []) {
                 throw ValidationException::withMessages([
                     'packages' => "Pick at least one location for seat \"{$package->name}\".",
                 ]);
-            }
-
-            if ($roleScopes->contains('hotel') && $hotelIds === []) {
+            } elseif ($needsHotel && $hotelIds === []) {
                 throw ValidationException::withMessages([
                     'packages' => "Pick at least one hotel for seat \"{$package->name}\".",
                 ]);

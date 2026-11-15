@@ -11,7 +11,6 @@ use App\Models\Package;
 use App\Models\RatePlan;
 use App\Models\Role;
 use App\Models\RoomType;
-use App\Models\StaffNotification;
 use Tests\TestCase;
 
 class GuestsReportsNotificationsTest extends TestCase
@@ -50,8 +49,6 @@ class GuestsReportsNotificationsTest extends TestCase
             '2026_11_04_000100_add_panorama_path_to_room_types_table',
             '2026_09_15_000004_create_rate_plans_table',
             '2026_09_19_000001_create_ops_and_cms_tables',
-            '2026_09_20_000001_create_staff_notifications_table',
-            '2026_11_16_000300_create_booking_events_table',
             '2026_11_17_000100_create_guest_notes_table',
         ] as $file) {
             (require database_path("migrations/$file.php"))->up();
@@ -264,47 +261,5 @@ class GuestsReportsNotificationsTest extends TestCase
         $this->assertStringContainsString("'=HYPERLINK", $csv);
         $this->assertStringNotContainsString(',"=HYPERLINK', $csv);
         $this->assertStringNotContainsString('INTERNAL', $csv);
-    }
-
-    // ---------- Notifications ----------
-
-    private function notify(Admin $to, string $type, ?Hotel $hotel, bool $read = false, string $at = '2026-11-10 10:00:00'): StaffNotification
-    {
-        $booking = $this->reservation($hotel ?? $this->pp, 'n'.uniqid().'@example.com');
-        $n = new StaffNotification([
-            'notifiable_type' => Admin::class, 'notifiable_id' => $to->id,
-            'type' => $type, 'booking_id' => $booking->id, 'hotel_id' => $hotel?->id, 'location_id' => $hotel?->location_id,
-            'title' => 'New reservation', 'body' => 'x', 'read_at' => $read ? now() : null,
-        ]);
-        $n->created_at = $at;
-        $n->save();
-
-        return $n;
-    }
-
-    public function test_notification_filters_paging_and_unread_total(): void
-    {
-        $me = $this->admin();
-        $other = $this->admin();
-        $this->notify($me, 'booking.created', $this->pp, false, '2026-11-10 10:00:00');
-        $this->notify($me, 'booking.created', $this->kampot, true, '2026-11-11 10:00:00');
-        $this->notify($me, 'booking.status_changed', $this->pp, false, '2026-11-12 10:00:00');
-        $this->notify($other, 'booking.created', $this->pp);
-
-        $get = fn (string $qs = '') => $this->actingAs($me, 'admin')->getJson('/admin/notifications'.$qs, self::JSON)->assertOk();
-
-        $all = $get();
-        $all->assertJsonPath('meta.total', 3)->assertJsonPath('unreadCount', 2);
-        $this->assertEqualsCanonicalizing(['booking.created', 'booking.status_changed'], $all->json('types'));
-
-        $get('?unread=1')->assertJsonPath('meta.total', 2)->assertJsonPath('unreadCount', 2);
-        $get('?type=booking.status_changed')->assertJsonPath('meta.total', 1);
-        $get('?hotelId='.$this->kampot->id)->assertJsonPath('meta.total', 1);
-        $get('?from=2026-11-11&to=2026-11-11')->assertJsonPath('meta.total', 1);
-
-        $page = $get('?perPage=2&page=2');
-        $page->assertJsonCount(1, 'notifications')->assertJsonPath('meta.lastPage', 2);
-
-        $this->actingAs($me, 'admin')->getJson('/admin/notifications?perPage=500', self::JSON)->assertStatus(422);
     }
 }

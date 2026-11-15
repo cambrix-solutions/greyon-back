@@ -667,6 +667,18 @@ All three are limited to the hotels the signed-in seat can see. Out of scope is 
 | `GET /availability?...&offerCode=SUMMER` | each result has `subtotal` (before discount), `discount`, `offer` {title, discountType, discountValue} or `null`, `taxesFees` (on the lower price) and `total`. The biggest discount wins. Offers with a code apply only when the code is sent. |
 | `POST /bookings` with `offerCode` | the reservation stores `offerTitle` and `discountTotal`; the receipt (`POST /reservations/lookup`) shows `pricing.discount` and `pricing.offerTitle` even if the offer is edited or deleted later. |
 
+## 21. Activity log
+
+Every create / update / delete of destinations, hotels, room types, rate plans, reservations, offers, pages, news, services, products, hero slides, media, site settings, people and roles is recorded when a signed-in admin or developer makes it. Seeders, guests and system jobs are not recorded.
+
+| Call | Expect |
+|---|---|
+| Edit a hotel's name as an admin, then `GET /admin/activity` | newest first: `actor` {type,id,name}, `action: "updated"`, `subject` {type:"hotel", id, label}, `changes` [{field:"name", from, to}], `hotelId`, `locationId`. |
+| `GET /admin/activity?subjectType=hotel&action=updated&actorId=3&hotelId=1&locationId=1&from=2026-11-01&to=2026-11-30&q=greyon&perPage=25&page=1` | filtered list plus `meta` {total,page,perPage,lastPage} and `subjectTypes` for the filter dropdown. |
+| Change a person's password | an entry for subject `person` with `from` / `to` shown as `(hidden)`. Passwords, tokens and Google ids are never stored. |
+| Manager seat | only entries for its own hotels / destinations. Entries that belong to no hotel (site settings, services, roles) show for global seats and developers only. |
+| Seat without the `activity` feature | 403. |
+
 ## What this doesn't cover yet
 
 The bookings-scope acceptance tests (a location-scoped manager → only

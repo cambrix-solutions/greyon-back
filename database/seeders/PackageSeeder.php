@@ -74,6 +74,7 @@ class PackageSeeder extends Seeder
             'reports',
             'calendar',
             'offers',
+            'activity',
         ];
         $managerLimits = ['locations' => 0, 'hotels_per_location' => null];
 

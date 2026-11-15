@@ -42,6 +42,8 @@ class FeatureSeeder extends Seeder
             ['hero_slides', 'Hero slides', 'Home page hero slider'],
             // Appended 2026-11-15: Access -> Roles (admin-created custom roles).
             ['roles', 'Roles', 'Create custom roles and choose which features each role can use'],
+            // Appended 2026-11-15: Pages CMS (Privacy, Terms, Booking terms...).
+            ['pages', 'Pages', 'Edit Privacy, Terms, Booking terms and other site pages'],
         ];
 
         foreach ($adminParents as $i => [$key, $label, $description]) {

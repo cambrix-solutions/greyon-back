@@ -78,10 +78,6 @@
       "value": ""
     },
     {
-      "key": "offer_id",
-      "value": ""
-    },
-    {
       "key": "faq_page_id",
       "value": ""
     }
@@ -2647,7 +2643,7 @@
               }
             },
             {
-              "name": "Get reservation (with timeline)",
+              "name": "Get reservation",
               "request": {
                 "method": "GET",
                 "header": [
@@ -2677,210 +2673,6 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"confirmed\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Offers",
-          "item": [
-            {
-              "name": "List offers",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/offers"
-              }
-            },
-            {
-              "name": "Create offer (automatic)",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/offers",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"Stay 3 save 15%\",\n  \"slug\": \"stay-3-save-15\",\n  \"summary\": \"15% off for 3+ nights\",\n  \"discountType\": \"percent\",\n  \"discountValue\": 15,\n  \"minNights\": 3,\n  \"hotelId\": null,\n  \"locationId\": null,\n  \"status\": \"published\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              },
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "type": "text/javascript",
-                    "exec": [
-                      "const j = pm.response.json();",
-                      "if (j.offer && j.offer.id) pm.collectionVariables.set('offer_id', j.offer.id);"
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "name": "Get offer",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/offers/{{offer_id}}"
-              }
-            },
-            {
-              "name": "Update offer",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/offers/{{offer_id}}",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"status\": \"draft\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "name": "Delete offer",
-              "request": {
-                "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/offers/{{offer_id}}"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Calendar",
-          "item": [
-            {
-              "name": "Month grid",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/calendar?month=2026-12&hotelId={{hotel_id}}&roomTypeId={{room_type_id}}"
-              }
-            },
-            {
-              "name": "Bulk stop-sell (weekends)",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/calendar/bulk",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"roomTypeId\": \"{{room_type_id}}\",\n  \"from\": \"2026-12-01\",\n  \"to\": \"2026-12-31\",\n  \"weekdays\": [\n    5,\n    6\n  ],\n  \"stopSell\": true\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "name": "Bulk units",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/calendar/bulk",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"roomTypeId\": \"{{room_type_id}}\",\n  \"from\": \"2026-12-01\",\n  \"to\": \"2026-12-31\",\n  \"availableUnits\": 4\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "name": "Bulk price and stay rules",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/calendar/bulk",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"roomTypeId\": \"{{room_type_id}}\",\n  \"from\": \"2026-12-20\",\n  \"to\": \"2026-12-31\",\n  \"ratePlanId\": \"{{rate_plan_id}}\",\n  \"price\": 120,\n  \"minStay\": 2,\n  \"maxStay\": 14\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2962,7 +2754,7 @@
                   }
                 ],
                 "url": "{{base_url}}/admin/reports/summary?from=2026-12-01&to=2026-12-31",
-                "description": "Add hotelId, locationId, status, basis. Occupancy is included when from and to are given."
+                "description": "Add hotelId, locationId, status, basis."
               }
             },
             {
@@ -2976,81 +2768,6 @@
                   }
                 ],
                 "url": "{{base_url}}/admin/reports/export?from=2026-12-01&to=2026-12-31"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Notifications",
-          "item": [
-            {
-              "name": "Inbox (filters)",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/notifications?unread=1&type=&hotelId=&from=&to=&perPage=25"
-              }
-            },
-            {
-              "name": "Unread count",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/notifications/unread-count"
-              }
-            },
-            {
-              "name": "Mark all read",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/notifications/read-all"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Activity log",
-          "item": [
-            {
-              "name": "Activity",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/activity?perPage=25&page=1"
-              }
-            },
-            {
-              "name": "Activity — filtered",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/activity?subjectType=hotel&action=updated&hotelId={{hotel_id}}&from=2026-11-01&to=2026-12-31&q="
               }
             }
           ]

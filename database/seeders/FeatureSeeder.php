@@ -47,12 +47,6 @@ class FeatureSeeder extends Seeder
             // Appended 2026-11-17: Guests and Reports pages (Phase 2, step 8).
             ['guests', 'Guests', 'Guest list, reservation history and staff notes'],
             ['reports', 'Reports', 'Reservation totals by destination, hotel and source, with CSV export'],
-            // Appended 2026-11-17: Calendar page (month grid + bulk edit).
-            ['calendar', 'Calendar', 'Month grid of units, reservations, stop-sell and prices, with bulk edit'],
-            // Appended 2026-11-17: Offers / special rates.
-            ['offers', 'Offers', 'Special rates and promo codes shown to guests and applied at quote time'],
-            // Appended 2026-11-18: Activity log (who changed what).
-            ['activity', 'Activity log', 'Who changed what and when, limited to the hotels the seat can see'],
         ];
 
         foreach ($adminParents as $i => [$key, $label, $description]) {

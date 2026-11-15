@@ -3,13 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Booking;
-use App\Models\BookingEvent;
-use App\Models\Developer;
 use App\Models\Hotel;
 use App\Models\Location;
 use App\Models\RatePlan;
 use App\Models\RoomType;
-use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 class ReservationTest extends TestCase
@@ -35,7 +32,6 @@ class ReservationTest extends TestCase
             '2026_11_04_000100_add_panorama_path_to_room_types_table.php',
             '2026_09_15_000004_create_rate_plans_table.php',
             '2026_09_19_000001_create_ops_and_cms_tables.php',
-            '2026_11_16_000300_create_booking_events_table.php',
         ] as $file) {
             (require database_path('migrations/'.$file))->up();
         }
@@ -74,28 +70,5 @@ class ReservationTest extends TestCase
 
         $this->assertStringNotContainsString('INTERNAL', $response->getContent());
         $response->assertJsonPath('booking.reference', 'GRY-ABC123');
-    }
-
-    public function test_events_record_who_did_it(): void
-    {
-        $booking = $this->booking();
-
-        $system = BookingEvent::record($booking, 'created', null, 'pending');
-        $this->assertSame('guest', $system->actor_type); // website booking, nobody signed in
-
-        Auth::guard('developer')->setUser(Developer::factory()->make(['id' => 7]));
-        $changed = BookingEvent::record($booking, 'status_changed', 'pending', 'confirmed');
-
-        $this->assertSame('developer', $changed->actor_type);
-        $this->assertSame(7, (int) $changed->actor_id);
-        $this->assertSame('confirmed', $changed->to_status);
-    }
-
-    public function test_notification_service_records_the_timeline(): void
-    {
-        $source = file_get_contents(app_path('Services/BookingNotificationService.php'));
-
-        $this->assertStringContainsString("BookingEvent::record(\$booking, 'created'", $source);
-        $this->assertStringContainsString("BookingEvent::record(\$booking, 'status_changed'", $source);
     }
 }

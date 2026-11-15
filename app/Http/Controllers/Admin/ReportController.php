@@ -6,10 +6,7 @@ use App\Http\Controllers\Concerns\AuthorizesAdminPanel;
 use App\Http\Controllers\Concerns\ScopesReservations;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
-use App\Models\RoomType;
 use App\Services\AccessService;
-use App\Services\CalendarService;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -26,7 +23,6 @@ class ReportController extends Controller
 
     public function __construct(
         private readonly AccessService $access,
-        private readonly CalendarService $calendar,
     ) {}
 
     public function summary(Request $request): JsonResponse
@@ -51,8 +47,7 @@ class ReportController extends Controller
             'byHotel' => $this->group($kept, fn (Booking $b) => (string) ($b->hotel?->name ?? 'Unknown'), 'hotel'),
             'byRoomType' => $this->group($kept, fn (Booking $b) => (string) ($b->roomType?->name ?? 'Unknown'), 'roomType')->take(10)->values(),
             'byDay' => $this->byDay($kept, $filters['basis']),
-            'occupancy' => $this->occupancy($request, $filters),
-            'note' => 'Value is the total of reservations that were not cancelled, not money received. Occupancy needs a from and to date (at most one year).',
+            'note' => 'Value is the total of reservations that were not cancelled, not money received.',
         ]);
     }
 
@@ -78,36 +73,6 @@ class ReportController extends Controller
             }
             fclose($out);
         }, 'reservations-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
-    }
-
-    /**
-     * Booked room-nights over available room-nights for from..to (inclusive),
-     * for the hotels this seat can see. Null without a date range.
-     *
-     * @param  array<string, mixed>  $f
-     * @return array<string, mixed>|null
-     */
-    private function occupancy(Request $request, array $f): ?array
-    {
-        if (! $f['from'] || ! $f['to']) {
-            return null;
-        }
-
-        $from = Carbon::createFromFormat('!Y-m-d', $f['from']);
-        $toExclusive = Carbon::createFromFormat('!Y-m-d', $f['to'])->addDay();
-        if ($from->diffInDays($toExclusive) > 366) {
-            return null;
-        }
-
-        $roomTypes = RoomType::query()
-            ->with('hotel:id,name,location_id')
-            ->when($f['hotelId'], fn ($q, $id) => $q->where('hotel_id', $id))
-            ->when($f['locationId'], fn ($q, $id) => $q->whereHas('hotel', fn ($h) => $h->where('location_id', $id)))
-            ->get()
-            ->filter(fn (RoomType $r) => $this->adminCanAccessHotel($request, $r->hotel_id))
-            ->values();
-
-        return $this->calendar->occupancy($roomTypes, $from, $toExclusive);
     }
 
     /** Stops spreadsheet formulas: a cell starting with = + - @ is read as a formula by Excel. */

@@ -47,14 +47,6 @@ class AvailabilityController extends Controller
             'availableUnits' => $row['availableUnits'],
             'subtotal' => $row['subtotal'],
             'taxesFees' => $row['taxesFees'],
-            'discount' => $row['discount'],
-            'offer' => $row['offer'] ? [
-                'id' => $row['offer']->id,
-                'slug' => $row['offer']->slug,
-                'title' => $row['offer']->title,
-                'discountType' => $row['offer']->discount_type,
-                'discountValue' => (float) $row['offer']->discount_value,
-            ] : null,
             'total' => $row['total'],
         ], $results);
 

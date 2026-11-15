@@ -269,7 +269,7 @@ class TeamController extends Controller
         }
 
         $pkgLoc = $package->limits->firstWhere('resource_key', 'locations');
-        if ($pkgLoc && count($locationIds) > (int) $pkgLoc->max_count) {
+        if ($pkgLoc && $pkgLoc->max_count !== null && count($locationIds) > (int) $pkgLoc->max_count) {
             throw ValidationException::withMessages([
                 'packages' => "This seat allows at most {$pkgLoc->max_count} locations.",
             ]);

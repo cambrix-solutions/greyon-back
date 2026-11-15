@@ -2226,7 +2226,7 @@
                 "url": "{{base_url}}/admin/guests/note",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"guest@example.com\",\n  \"note\": \"Prefers a high floor.\"\n}",
+                  "raw": "{\n  \"email\": \"guest@greyon.test\",\n  \"note\": \"Prefers a high floor.\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"

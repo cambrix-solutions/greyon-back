@@ -56,6 +56,7 @@ class GuestsReportsNotificationsTest extends TestCase
 
         Role::create(['name' => 'admin', 'is_global' => true, 'scope' => 'none']);
         Role::create(['name' => 'manager', 'is_global' => false, 'scope' => 'location']);
+        Role::create(['name' => 'hotel_admin', 'is_global' => false, 'scope' => 'hotel']);
         foreach (['guests', 'reports', 'bookings'] as $i => $key) {
             Feature::create(['key' => $key, 'label' => ucfirst($key), 'category' => 'admin', 'sort_order' => $i]);
         }
@@ -74,6 +75,22 @@ class GuestsReportsNotificationsTest extends TestCase
 
         $admin = Admin::factory()->create();
         $admin->packages()->sync([$package->id => ['location_ids' => $role === 'manager' ? [1] : null, 'hotel_ids' => null]]);
+
+        return $admin;
+    }
+
+    /** A custom role: carries both base roles, scoped by what is picked when the person is added. */
+    private function customRoleAdmin(array $locationIds, array $hotelIds): Admin
+    {
+        $package = Package::create(['name' => 'Front desk '.uniqid(), 'is_system' => false]);
+        $package->roles()->sync(Role::whereIn('name', ['manager', 'hotel_admin'])->pluck('id'));
+        $package->features()->sync(Feature::whereIn('key', ['guests', 'reports'])->pluck('id'));
+
+        $admin = Admin::factory()->create();
+        $admin->packages()->sync([$package->id => [
+            'location_ids' => $locationIds ?: null,
+            'hotel_ids' => $hotelIds ?: null,
+        ]]);
 
         return $admin;
     }
@@ -107,6 +124,32 @@ class GuestsReportsNotificationsTest extends TestCase
         $b->save();
 
         return $b;
+    }
+
+    // ---------- Custom role scope ----------
+
+    public function test_custom_role_on_a_hotel_only_sees_that_hotel(): void
+    {
+        $this->reservation($this->pp, 'pp@example.com');
+        $this->reservation($this->kampot, 'kampot@example.com');
+
+        $this->actingAs($this->customRoleAdmin([], [$this->kampot->id]), 'admin')
+            ->getJson('/admin/guests', self::JSON)
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('guests.0.email', 'kampot@example.com');
+    }
+
+    public function test_custom_role_on_a_destination_sees_every_hotel_in_it(): void
+    {
+        $this->reservation($this->pp, 'pp@example.com');
+        $this->reservation($this->kampot, 'kampot@example.com');
+
+        $this->actingAs($this->customRoleAdmin([$this->pp->location_id], []), 'admin')
+            ->getJson('/admin/guests', self::JSON)
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('guests.0.email', 'pp@example.com');
     }
 
     // ---------- Guests ----------

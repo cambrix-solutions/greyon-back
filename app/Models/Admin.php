@@ -51,6 +51,7 @@ class Admin extends Authenticatable implements MustVerifyEmail
         'created_by_admin_id',
         'name',
         'email',
+        'google_id',
         'password',
         'status',
     ];

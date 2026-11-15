@@ -579,6 +579,23 @@ package out of the box:
     `{{admin_package_id}}` — expect `201` with both limit rows copied
     onto the new `"Admin (copy)"` package.
 
+## 14. Custom roles (admin, Access -> Roles)
+
+Needs the `roles` feature (seeded for the org Admin seat; `php artisan migrate` adds it to an existing DB). Log in with `POST /admin/login` first.
+
+| Call | Expect |
+|---|---|
+| `GET /admin/roles/options` | `scopes` (location, hotel) + `features` the logged-in admin can grant (never `features`). |
+| `POST /admin/roles` `{"name":"Front desk","scope":"hotel","featureKeys":["bookings","rooms"]}` | 201, `role.isSystem=false`. |
+| same, with a feature you do not hold | 422 on `featureKeys`. |
+| `scope` = `none` or missing | 422 on `scope`. |
+| `GET /admin/roles` | custom roles + the system Manager / Hotel desk seats (read-only). |
+| `PATCH /admin/roles/{id}` | updates name, description, features. Changing `scope` after people hold it: 422. |
+| `PATCH` / `DELETE` on a system seat | 404. |
+| `DELETE /admin/roles/{id}` while assigned | 400. |
+
+Then `GET /admin/seats` lists the new role, and `POST /admin/team` can assign it with `locationIds` (scope `location`) or `hotelIds` (scope `hotel`).
+
 ## What this doesn't cover yet
 
 The bookings-scope acceptance tests (a location-scoped manager → only

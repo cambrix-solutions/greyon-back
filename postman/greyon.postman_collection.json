@@ -82,15 +82,7 @@
       "value": ""
     },
     {
-      "key": "offer_slug",
-      "value": ""
-    },
-    {
       "key": "faq_page_id",
-      "value": ""
-    },
-    {
-      "key": "media_id",
       "value": ""
     }
   ],
@@ -2490,7 +2482,7 @@
       ]
     },
     {
-      "name": "Phase 2 — Public (guest site)",
+      "name": "Phase 2 — Public (existing guest endpoints)",
       "item": [
         {
           "name": "Availability and booking",
@@ -2510,19 +2502,6 @@
               }
             },
             {
-              "name": "Search availability — with promo code",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/availability?hotelSlug=greyon-pp&checkIn=2026-12-10&checkOut=2026-12-13&rooms=1&adults=2&children=0&offerCode=WELCOME10"
-              }
-            },
-            {
               "name": "Create reservation",
               "request": {
                 "method": "POST",
@@ -2539,7 +2518,7 @@
                 "url": "{{base_url}}/bookings",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"hotelId\": \"{{hotel_id}}\",\n  \"roomTypeId\": \"{{room_type_id}}\",\n  \"ratePlanId\": \"{{rate_plan_id}}\",\n  \"checkIn\": \"2026-12-10\",\n  \"checkOut\": \"2026-12-13\",\n  \"rooms\": 1,\n  \"adults\": 2,\n  \"children\": 0,\n  \"guestFullName\": \"Test Guest\",\n  \"guestEmail\": \"guest@example.com\",\n  \"guestPhone\": \"+855 12 345 678\",\n  \"specialRequests\": \"\",\n  \"offerCode\": null\n}",
+                  "raw": "{\n  \"hotelId\": \"{{hotel_id}}\",\n  \"roomTypeId\": \"{{room_type_id}}\",\n  \"ratePlanId\": \"{{rate_plan_id}}\",\n  \"checkIn\": \"2026-12-10\",\n  \"checkOut\": \"2026-12-13\",\n  \"rooms\": 1,\n  \"adults\": 2,\n  \"children\": 0,\n  \"guestFullName\": \"Test Guest\",\n  \"guestEmail\": \"guest@example.com\",\n  \"guestPhone\": \"+855 12 345 678\",\n  \"specialRequests\": \"\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2562,33 +2541,6 @@
               ]
             },
             {
-              "name": "Find my reservation (reference + email)",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/reservations/lookup",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"reference\": \"{{booking_reference}}\",\n  \"email\": \"guest@example.com\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "description": "Returns reservation, receipt (pricing incl. discount/offerTitle) and timeline. Wrong email and wrong reference give the same 404. Throttled 10/min."
-              }
-            },
-            {
               "name": "Get booking by reference (legacy)",
               "request": {
                 "method": "GET",
@@ -2599,127 +2551,6 @@
                   }
                 ],
                 "url": "{{base_url}}/bookings/{{booking_reference}}"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Offers",
-          "item": [
-            {
-              "name": "List offers",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/offers",
-                "description": "Published and live only. Promo-code offers are never listed."
-              }
-            },
-            {
-              "name": "Get offer by slug",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/offers/{{offer_slug}}"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Gallery",
-          "item": [
-            {
-              "name": "Gallery",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/gallery?perPage=24&page=1"
-              }
-            },
-            {
-              "name": "Gallery — by destination",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/gallery?location=phnom-penh"
-              }
-            },
-            {
-              "name": "Gallery — by hotel",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/gallery?hotel=greyon-pp"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Pages and FAQ",
-          "item": [
-            {
-              "name": "List pages",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/pages"
-              }
-            },
-            {
-              "name": "FAQ",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/pages/faq",
-                "description": "404 until staff publish the FAQ page."
-              }
-            },
-            {
-              "name": "Privacy",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/pages/privacy"
               }
             }
           ]
@@ -2904,39 +2735,11 @@
                     "type": "text/javascript",
                     "exec": [
                       "const j = pm.response.json();",
-                      "const v = j.offer && j.offer.id;",
-                      "if (v !== undefined && v !== null) pm.collectionVariables.set('offer_id', v);",
-                      "pm.collectionVariables.set('offer_slug', j.offer && j.offer.slug);"
+                      "if (j.offer && j.offer.id) pm.collectionVariables.set('offer_id', j.offer.id);"
                     ]
                   }
                 }
               ]
-            },
-            {
-              "name": "Create offer (promo code)",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/offers",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"Welcome\",\n  \"slug\": \"welcome-10\",\n  \"discountType\": \"fixed\",\n  \"discountValue\": 10,\n  \"code\": \"WELCOME10\",\n  \"status\": \"published\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
             },
             {
               "name": "Get offer",
@@ -3299,76 +3102,6 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"published\",\n  \"blocks\": [\n    {\n      \"type\": \"heading\",\n      \"level\": 2,\n      \"text\": \"Booking\"\n    },\n    {\n      \"type\": \"faq\",\n      \"items\": [\n        {\n          \"question\": \"Can I cancel?\",\n          \"answer\": \"Yes, see the reservation terms.\"\n        },\n        {\n          \"question\": \"What time is check-in?\",\n          \"answer\": \"From 2 pm.\"\n        }\n      ]\n    }\n  ]\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Media and gallery",
-          "item": [
-            {
-              "name": "List media",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/media"
-              }
-            },
-            {
-              "name": "Hide from gallery",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/media/{{media_id}}",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"inGallery\": false\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "name": "Show in gallery",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/media/{{media_id}}",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"inGallery\": true\n}",
                   "options": {
                     "raw": {
                       "language": "json"

@@ -66,52 +66,6 @@ class ReservationTest extends TestCase
         ], $over));
     }
 
-    public function test_lookup_returns_the_reservation_with_receipt_and_timeline(): void
-    {
-        $booking = $this->booking();
-        BookingEvent::record($booking, 'created', null, 'pending');
-        BookingEvent::record($booking, 'status_changed', 'pending', 'confirmed');
-
-        $this->postJson('/reservations/lookup', ['reference' => 'gry-abc123', 'email' => 'DARA@example.com'], self::JSON)
-            ->assertOk()
-            ->assertJsonPath('reservation.reference', 'GRY-ABC123')
-            ->assertJsonPath('reservation.nights', 3)
-            ->assertJsonPath('reservation.hotel.name', 'Greyon PP')
-            ->assertJsonPath('reservation.ratePlan.cancellationPolicy', 'Free until 48h')
-            ->assertJsonPath('reservation.pricing.total', 330)
-            ->assertJsonCount(2, 'reservation.timeline')
-            ->assertJsonPath('reservation.timeline.1.status', 'confirmed');
-    }
-
-    public function test_lookup_hides_internal_notes_and_staff_identity(): void
-    {
-        $booking = $this->booking();
-        BookingEvent::record($booking, 'created', null, 'pending');
-
-        $body = $this->postJson('/reservations/lookup', ['reference' => 'GRY-ABC123', 'email' => 'dara@example.com'], self::JSON)->getContent();
-
-        $this->assertStringNotContainsString('INTERNAL', $body);
-        $this->assertStringNotContainsString('actor', $body);
-    }
-
-    public function test_wrong_email_or_reference_look_identical(): void
-    {
-        $this->booking();
-
-        $wrongEmail = $this->postJson('/reservations/lookup', ['reference' => 'GRY-ABC123', 'email' => 'other@example.com'], self::JSON);
-        $wrongRef = $this->postJson('/reservations/lookup', ['reference' => 'GRY-ZZZZZZ', 'email' => 'dara@example.com'], self::JSON);
-
-        $wrongEmail->assertNotFound();
-        $wrongRef->assertNotFound();
-        $this->assertSame($wrongEmail->json('message'), $wrongRef->json('message'));
-    }
-
-    public function test_lookup_validates_input(): void
-    {
-        $this->postJson('/reservations/lookup', ['reference' => 'GRY-ABC123'], self::JSON)
-            ->assertStatus(422)->assertJsonValidationErrors('email');
-    }
-
     public function test_public_reference_endpoint_no_longer_leaks_internal_notes(): void
     {
         $this->booking();

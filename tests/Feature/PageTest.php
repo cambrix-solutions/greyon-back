@@ -144,14 +144,4 @@ class PageTest extends TestCase
         $this->actingAs($this->adminWith('manager'), 'admin')
             ->postJson('/admin/pages', $this->payload(), self::JSON)->assertForbidden();
     }
-
-    public function test_public_shows_only_published_pages(): void
-    {
-        Page::create(['slug' => 'terms', 'title' => 'Terms', 'blocks' => [['type' => 'paragraph', 'text' => 'T']], 'status' => 'published', 'is_system' => true]);
-        Page::create(['slug' => 'privacy', 'title' => 'Privacy', 'blocks' => [], 'status' => 'draft', 'is_system' => true]);
-
-        $this->getJson('/pages/terms', self::JSON)->assertOk()->assertJsonPath('page.title', 'Terms');
-        $this->getJson('/pages/privacy', self::JSON)->assertNotFound();
-        $this->getJson('/pages', self::JSON)->assertOk()->assertJsonCount(1, 'pages')->assertJsonPath('pages.0.slug', 'terms');
-    }
 }

@@ -608,7 +608,6 @@ Needs the `pages` feature (seeded for the org Admin seat; `php artisan migrate` 
 | image `url` = `javascript:...` | 422 (must start with `http(s)://`, `/` or `uploads/`). |
 | `PATCH /admin/pages/{id}` `{"slug":"x"}` on a built-in page | 400. |
 | `DELETE /admin/pages/{id}` on a built-in page | 400 (set it to draft instead); custom page: 200. |
-| `GET /pages/{slug}` (no login) | published page; a draft is 404. |
 | `GET /pages` (no login) | published pages (`slug`, `title`) for footer links. |
 
 ## 16. Public data and wording
@@ -621,15 +620,12 @@ Needs the `pages` feature (seeded for the org Admin seat; `php artisan migrate` 
 | Create a reservation, then check `GET /notifications` | title is "New reservation"; after a status change, "Reservation <status>". |
 | `GET /bookings/{unknown-reference}` | 404 "Reservation not found". |
 
-## 17. Reservation timeline, find-my-reservation, receipt
+## 17. Reservation timeline
 
 | Call | Expect |
 |---|---|
-| `POST /reservations/lookup` `{"reference":"GRY-ABC123","email":"guest@x.com"}` (no login) | `reservation` with `nights`, `hotel`, `roomType`, `ratePlan.cancellationPolicy`, `pricing` (receipt), `timeline`. No internal notes. |
-| same with the wrong email, or an unknown reference | the same 404 message for both. More than 10 tries a minute: 429. |
 | `GET /admin/bookings/{id}` | `booking.events` (who changed what, when) and `booking.nights`. |
 | `PATCH /admin/bookings/{id}` `{"status":"confirmed"}`, then GET it again | a `status_changed` event from pending to confirmed with your admin as `actorType`. |
-| `GET /my/bookings/{reference}` (signed-in guest) | the existing `booking` plus a new `reservation` (same shape as the lookup). |
 | `GET /bookings/{reference}` (public) | unchanged, but `notes` is no longer included. |
 
 ## 18. Notifications inbox, Guests, Reports
@@ -657,15 +653,12 @@ All three are limited to the hotels the signed-in seat can see. Out of scope is 
 | range over a year, nothing to change, bad weekday | 422. Room type outside the seat: 404. |
 | `GET /admin/reports/summary?from=2026-12-01&to=2026-12-31` | now includes `occupancy` {availableRoomNights, bookedRoomNights, rate, byHotel}. Without a date range it is `null`. |
 
-## 20. Offers (special rates)
+## 20. Offers (special rates, admin only)
 
 | Call | Expect |
 |---|---|
 | `POST /admin/offers` `{"title":"Early bird","discountType":"percent","discountValue":10,"hotelId":1,"bookFrom":"2026-11-01","bookTo":"2026-12-31","stayFrom":"2027-01-01","stayTo":"2027-03-31","minNights":2,"code":"SUMMER","status":"published"}` | 201 with `slug` (auto from the title), `code` stored upper case, `live`. Percent over 100, hotel outside the destination, duplicate code: 422. |
 | `GET/PATCH/DELETE /admin/offers/{id}` | Hotel / destination seats only reach offers in their own scope (404 otherwise); an offer for everywhere needs a global seat (403 on create, 404 when reading). |
-| `GET /offers`, `GET /offers/{slug}` (no login) | Published offers open for booking today. Drafts, expired / future windows and promo-code offers are never listed (detail: 404). Filter with `?hotelSlug=` or `?locationSlug=`. |
-| `GET /availability?...&offerCode=SUMMER` | each result has `subtotal` (before discount), `discount`, `offer` {title, discountType, discountValue} or `null`, `taxesFees` (on the lower price) and `total`. The biggest discount wins. Offers with a code apply only when the code is sent. |
-| `POST /bookings` with `offerCode` | the reservation stores `offerTitle` and `discountTotal`; the receipt (`POST /reservations/lookup`) shows `pricing.discount` and `pricing.offerTitle` even if the offer is edited or deleted later. |
 
 ## 21. Activity log
 
@@ -679,14 +672,11 @@ Every create / update / delete of destinations, hotels, room types, rate plans, 
 | Manager seat | only entries for its own hotels / destinations. Entries that belong to no hotel (site settings, services, roles) show for global seats and developers only. |
 | Seat without the `activity` feature | 403. |
 
-## 22. Public gallery and FAQ
+## 22. FAQ
 
 | Call | Expect |
 |---|---|
-| `GET /gallery` | `gallery[]` of {id, src, alt, location{slug,name}, hotel{slug,name}|null} newest first, plus `meta` {total,page,perPage,lastPage}. Only items of published destinations / hotels, and only those with `inGallery` on. |
-| `GET /gallery?location=phnom-penh&hotel=greyon-pp&perPage=24&page=1` | filtered; an unknown or unpublished slug is 404; `perPage` over 100 is 422. |
-| `PATCH /admin/media/{id}` `{"inGallery": false}` | the item stays in the media library but leaves the public gallery. `mediaItem.inGallery` is returned on every media call. |
-| `GET /pages/faq` | 404 until staff publish it. A built-in page, like Privacy and Terms. |
+| `GET /admin/pages` | a built-in `faq` page exists (draft). It cannot be deleted or renamed, like Privacy and Terms. |
 | `PATCH /admin/pages/{id}` with block `{"type":"faq","items":[{"question","answer"}]}` | stored with only those two keys. An item missing either one is 422. Plain `list` items must now be text. |
 
 ## What this doesn't cover yet

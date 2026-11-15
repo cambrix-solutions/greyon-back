@@ -32,7 +32,7 @@ class CatalogController extends Controller
             $locations = Location::query()
                 ->select([
                     'id', 'name', 'slug', 'description',
-                    'highlights', 'phone', 'email', 'status', 'seo_title', 'seo_description',
+                    'highlights', 'landmarks', 'phone', 'email', 'status', 'seo_title', 'seo_description',
                     'created_by_admin_id',
                 ])
                 ->selectRaw($this->boundedImageSql('hero_image'))
@@ -73,6 +73,7 @@ class CatalogController extends Controller
                     'panorama_path',
                 ])
                 ->selectRaw($this->boundedJsonImagesSql('images'))
+                ->with('hotel:id,name,slug')
                 ->where('status', 'published')
                 ->whereIn('hotel_id', $hotelIds)
                 ->orderBy('name')

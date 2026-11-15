@@ -75,7 +75,7 @@ class PackageSeeder extends Seeder
         foreach (['Phnom Penh', 'Kampot', 'Sihanoukville'] as $city) {
             $this->makePackage(
                 "Manager · {$city}",
-                "Location-scoped content, rooms, rates, bookings and news for {$city} — can add hotels here without a quantity cap, cannot create new destinations.",
+                "Location-scoped content, rooms, rates, reservations and news for {$city} — can add hotels here without a quantity cap, cannot create new destinations.",
                 null,
                 ['manager'],
                 $managerFeatureKeys,

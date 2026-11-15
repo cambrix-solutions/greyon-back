@@ -19,7 +19,7 @@ class FeatureSeeder extends Seeder
             ['hotels', 'Hotels', 'Hotel CMS (linked to locations via locationId)'],
             ['rooms', 'Room types', 'Rooms per hotel'],
             ['rates', 'Rates & availability', 'Inventory and nightly pricing'],
-            ['bookings', 'Bookings', 'Reservation inbox / management'],
+            ['bookings', 'Reservations', 'Reservation inbox / management'],
             ['news', 'News', 'News / blog CMS'],
             // Managers get this feature (scoped). Product 2026-09-22: keep Manager
             // access when Media moves to real object storage — not Admin-only.
@@ -43,7 +43,7 @@ class FeatureSeeder extends Seeder
             // Appended 2026-11-15: Access -> Roles (admin-created custom roles).
             ['roles', 'Roles', 'Create custom roles and choose which features each role can use'],
             // Appended 2026-11-15: Pages CMS (Privacy, Terms, Booking terms...).
-            ['pages', 'Pages', 'Edit Privacy, Terms, Booking terms and other site pages'],
+            ['pages', 'Pages', 'Edit Privacy, Terms, Reservation terms and other site pages'],
         ];
 
         foreach ($adminParents as $i => [$key, $label, $description]) {
@@ -59,7 +59,7 @@ class FeatureSeeder extends Seeder
         }
 
         $public = [
-            ['booking_public', 'Public booking engine', 'Guest-facing /booking flow'],
+            ['booking_public', 'Public reservation engine', 'Guest-facing /booking flow'],
             ['news_public', 'Public news', 'Guest-facing news pages'],
             ['contact_public', 'Public contact form', 'Guest-facing /contact'],
             ['portfolios', 'Portfolio stubs', 'Coming-soon portfolio pages'],

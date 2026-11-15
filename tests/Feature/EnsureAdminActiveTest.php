@@ -10,6 +10,15 @@ use Tests\TestCase;
 
 class EnsureAdminActiveTest extends TestCase
 {
+    // logout() saves the admin (remember-token cycle), so this test needs a real
+    // `admins` table. Only that migration is run - the full set is MySQL-only.
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        (require database_path('migrations/0001_01_01_000003_create_admins_table.php'))->up();
+    }
+
     private function handle(?Admin $admin): \Symfony\Component\HttpFoundation\Response
     {
         if ($admin) {
@@ -24,14 +33,14 @@ class EnsureAdminActiveTest extends TestCase
 
     public function test_active_admin_passes(): void
     {
-        $response = $this->handle(Admin::factory()->make(['id' => 1, 'status' => 'active']));
+        $response = $this->handle(Admin::factory()->create(['status' => 'active']));
 
         $this->assertSame(200, $response->getStatusCode());
     }
 
     public function test_inactive_admin_is_signed_out_with_401(): void
     {
-        $response = $this->handle(Admin::factory()->make(['id' => 1, 'status' => 'inactive']));
+        $response = $this->handle(Admin::factory()->create(['status' => 'inactive']));
 
         $this->assertSame(401, $response->getStatusCode());
         $this->assertStringContainsString('not active', $response->getContent());

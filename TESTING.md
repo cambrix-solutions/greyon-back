@@ -679,6 +679,16 @@ Every create / update / delete of destinations, hotels, room types, rate plans, 
 | Manager seat | only entries for its own hotels / destinations. Entries that belong to no hotel (site settings, services, roles) show for global seats and developers only. |
 | Seat without the `activity` feature | 403. |
 
+## 22. Public gallery and FAQ
+
+| Call | Expect |
+|---|---|
+| `GET /gallery` | `gallery[]` of {id, src, alt, location{slug,name}, hotel{slug,name}|null} newest first, plus `meta` {total,page,perPage,lastPage}. Only items of published destinations / hotels, and only those with `inGallery` on. |
+| `GET /gallery?location=phnom-penh&hotel=greyon-pp&perPage=24&page=1` | filtered; an unknown or unpublished slug is 404; `perPage` over 100 is 422. |
+| `PATCH /admin/media/{id}` `{"inGallery": false}` | the item stays in the media library but leaves the public gallery. `mediaItem.inGallery` is returned on every media call. |
+| `GET /pages/faq` | 404 until staff publish it. A built-in page, like Privacy and Terms. |
+| `PATCH /admin/pages/{id}` with block `{"type":"faq","items":[{"question","answer"}]}` | stored with only those two keys. An item missing either one is 422. Plain `list` items must now be text. |
+
 ## What this doesn't cover yet
 
 The bookings-scope acceptance tests (a location-scoped manager → only

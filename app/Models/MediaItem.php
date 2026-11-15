@@ -17,6 +17,7 @@ class MediaItem extends Model
         'hotel_id',
         'src',
         'alt',
+        'in_gallery',
         'created_by_admin_id',
     ];
 
@@ -25,6 +26,7 @@ class MediaItem extends Model
         return [
             'location_id' => 'integer',
             'hotel_id' => 'integer',
+            'in_gallery' => 'boolean',
             'created_by_admin_id' => 'integer',
         ];
     }

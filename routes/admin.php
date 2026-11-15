@@ -66,7 +66,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.'], function () {
 // developer session can open Destinations / Hotels / Rooms without a
 // fake "Unauthenticated." 401 (SPA was treating that as logout).
 // Session endpoints (/me, /logout, password) stay admin-only.
-Route::group(['middleware' => 'auth:admin,developer', 'prefix' => 'admin', 'as' => 'admin.'], function () {
+Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix' => 'admin', 'as' => 'admin.'], function () {
     Route::middleware('auth:admin')->group(function () {
         Route::get('/me', [AuthenticatedSessionController::class, 'show'])->name('me');
         Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');

@@ -106,6 +106,10 @@ class TeamController extends Controller
 
         $data = $this->validated($request, $target, $actor);
 
+        if (($data['status'] ?? null) === 'inactive' && (int) $actor->id === (int) $target->id) {
+            throw new HttpException(400, 'You cannot deactivate your own account.');
+        }
+
         if (array_key_exists('password', $data)) {
             $data['password'] = filled($data['password']) ? Hash::make($data['password']) : $target->password;
         }

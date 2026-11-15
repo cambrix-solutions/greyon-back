@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Auth\NewPasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Admin\Auth\VerifyEmailController;
+use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\AdminOfferController;
 use App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BookingController;
@@ -170,6 +171,11 @@ Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix'
         Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
         Route::patch('/bookings/{booking}', [BookingController::class, 'update'])->name('bookings.update');
         Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
+    });
+
+    // Activity log: who changed what, limited to the seat's own hotels / destinations.
+    Route::middleware('permission:activity')->group(function () {
+        Route::get('/activity', [ActivityController::class, 'index'])->name('activity.index');
     });
 
     // Offers / special rates (hotel, destination or everywhere; scoped seats only touch their own).

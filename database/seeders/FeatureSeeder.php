@@ -51,6 +51,8 @@ class FeatureSeeder extends Seeder
             ['calendar', 'Calendar', 'Month grid of units, reservations, stop-sell and prices, with bulk edit'],
             // Appended 2026-11-17: Offers / special rates.
             ['offers', 'Offers', 'Special rates and promo codes shown to guests and applied at quote time'],
+            // Appended 2026-11-18: Activity log (who changed what).
+            ['activity', 'Activity log', 'Who changed what and when, limited to the hotels the seat can see'],
         ];
 
         foreach ($adminParents as $i => [$key, $label, $description]) {

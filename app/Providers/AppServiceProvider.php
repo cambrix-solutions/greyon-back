@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Observers\ActivityObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Activity log: who changed what (see App\Observers\ActivityObserver).
+        foreach (array_keys(ActivityObserver::SUBJECTS) as $model) {
+            $model::observe(ActivityObserver::class);
+        }
     }
 }

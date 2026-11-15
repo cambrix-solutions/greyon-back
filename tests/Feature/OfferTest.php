@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Admin;
+use App\Models\Booking;
 use App\Models\Feature;
 use App\Models\Hotel;
 use App\Models\Location;
@@ -211,39 +212,6 @@ class OfferTest extends TestCase
         $this->actingAs($seat, 'admin')->postJson('/admin/offers', [], self::JSON)->assertForbidden();
     }
 
-    // ---------- Public pages ----------
-
-    public function test_public_lists_only_open_published_offers_without_a_code(): void
-    {
-        $this->offer(['title' => 'Live']);
-        $this->offer(['title' => 'Draft', 'status' => 'draft']);
-        $this->offer(['title' => 'Secret', 'code' => 'SECRET']);
-        $this->offer(['title' => 'Expired', 'book_to' => $this->day(-1)]);
-        $this->offer(['title' => 'Not yet', 'book_from' => $this->day(1)]);
-        $this->offer(['title' => 'Kampot only', 'hotel_id' => $this->kampot->id]);
-
-        $res = $this->getJson('/offers', self::JSON)->assertOk();
-        $this->assertEqualsCanonicalizing(['Live', 'Kampot only'], collect($res->json('offers'))->pluck('title')->all());
-        $this->assertStringNotContainsString('SECRET', $res->getContent());
-        $this->assertStringNotContainsString('"code"', $res->getContent());
-
-        $this->getJson('/offers?hotelSlug=greyon-pp', self::JSON)->assertOk()->assertJsonCount(1, 'offers')->assertJsonPath('offers.0.title', 'Live');
-        $this->getJson('/offers?locationSlug=kampot', self::JSON)->assertOk()->assertJsonCount(2, 'offers');
-        $this->getJson('/offers?hotelSlug=nope', self::JSON)->assertOk()->assertJsonCount(0, 'offers');
-    }
-
-    public function test_public_detail_hides_drafts_and_code_offers(): void
-    {
-        $live = $this->offer(['slug' => 'early-bird', 'summary' => 'Book early']);
-        $this->offer(['slug' => 'draft-one', 'status' => 'draft']);
-        $this->offer(['slug' => 'secret-one', 'code' => 'SECRET']);
-
-        $this->getJson('/offers/early-bird', self::JSON)->assertOk()->assertJsonPath('offer.title', 'Early bird')->assertJsonPath('offer.summary', 'Book early');
-        $this->getJson('/offers/draft-one', self::JSON)->assertNotFound();
-        $this->getJson('/offers/secret-one', self::JSON)->assertNotFound();
-        $this->assertNotNull($live);
-    }
-
     // ---------- Quote time ----------
 
     public function test_without_an_offer_the_quote_is_unchanged(): void
@@ -287,18 +255,6 @@ class OfferTest extends TestCase
         $this->assertEquals(0, $row['total']);
     }
 
-    public function test_code_offers_apply_only_with_the_code(): void
-    {
-        $this->offer(['title' => 'Summer', 'code' => 'SUMMER', 'discount_value' => 20]);
-
-        $this->assertNull($this->row($this->search())['offer']);
-        $this->assertNull($this->row($this->search(['offerCode' => 'WRONG']))['offer']);
-
-        $row = $this->row($this->search(['offerCode' => ' summer ']));
-        $this->assertSame('Summer', $row['offer']['title']);
-        $this->assertEquals(60, $row['discount']);
-    }
-
     public function test_offer_conditions_decide_whether_it_applies(): void
     {
         $applies = fn (array $q = []) => $this->row($this->search($q))['offer'] !== null;
@@ -339,7 +295,7 @@ class OfferTest extends TestCase
 
     public function test_a_reservation_keeps_its_discount_even_if_the_offer_is_deleted(): void
     {
-        $offer = $this->offer(['title' => 'Summer', 'code' => 'SUMMER', 'discount_value' => 10]);
+        $offer = $this->offer(['title' => 'Summer', 'discount_value' => 10]);
         $room = RoomType::first();
         $plan = RatePlan::first();
 
@@ -347,7 +303,6 @@ class OfferTest extends TestCase
             'hotelId' => $this->pp->id, 'roomTypeId' => $room->id, 'ratePlanId' => $plan->id,
             'checkIn' => '2026-12-10', 'checkOut' => '2026-12-13', 'rooms' => 1, 'adults' => 2, 'children' => 0,
             'guestFullName' => 'Dara Sok', 'guestEmail' => 'Dara@Example.com', 'guestPhone' => '012345678',
-            'offerCode' => 'summer',
         ], self::JSON)->assertCreated();
 
         $this->assertEquals(297, $res->json('booking.total'));
@@ -358,12 +313,9 @@ class OfferTest extends TestCase
 
         $offer->delete();
 
-        $receipt = $this->postJson('/reservations/lookup', ['reference' => $reference, 'email' => 'dara@example.com'], self::JSON)->assertOk();
-        $this->assertEquals(300, $receipt->json('reservation.pricing.subtotal'));
-        $this->assertEquals(30, $receipt->json('reservation.pricing.discount'));
-        $this->assertEquals(27, $receipt->json('reservation.pricing.taxesFees'));
-        $this->assertEquals(297, $receipt->json('reservation.pricing.total'));
-        $this->assertSame('Summer', $receipt->json('reservation.pricing.offerTitle'));
+        // The reservation keeps its own copy of the discount.
+        $this->assertDatabaseHas('bookings', ['reference' => $reference, 'offer_title' => 'Summer']);
+        $this->assertEquals(30, Booking::where('reference', $reference)->value('discount_total'));
     }
 
     public function test_a_reservation_without_an_offer_has_no_discount(): void

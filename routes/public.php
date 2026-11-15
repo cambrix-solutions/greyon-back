@@ -8,10 +8,6 @@ use App\Http\Controllers\Public\HeroSlideController;
 use App\Http\Controllers\Public\HotelController;
 use App\Http\Controllers\Public\LocationController;
 use App\Http\Controllers\Public\NewsController;
-use App\Http\Controllers\Public\GalleryController;
-use App\Http\Controllers\Public\PageController;
-use App\Http\Controllers\Public\PublicOfferController;
-use App\Http\Controllers\Public\ReservationLookupController;
 use App\Http\Controllers\Public\SiteSettingController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,18 +35,9 @@ Route::get('/hotels/{slug}', [HotelController::class, 'show'])->name('public.hot
 Route::get('/availability', AvailabilityController::class)->name('public.availability');
 Route::post('/bookings', [BookingController::class, 'store'])->name('public.bookings.store');
 Route::get('/bookings/{reference}', [BookingController::class, 'show'])->name('public.bookings.show');
-Route::post('/reservations/lookup', ReservationLookupController::class)->middleware('throttle:10,1')->name('public.reservations.lookup');
-
-Route::get('/offers', [PublicOfferController::class, 'index'])->name('public.offers.index');
-Route::get('/offers/{slug}', [PublicOfferController::class, 'show'])->name('public.offers.show');
 
 Route::get('/news', [NewsController::class, 'index'])->name('public.news.index');
 Route::get('/news/{slug}', [NewsController::class, 'show'])->name('public.news.show');
-
-Route::get('/gallery', [GalleryController::class, 'index'])->name('public.gallery');
-
-Route::get('/pages', [PageController::class, 'index'])->name('public.pages.index');
-Route::get('/pages/{slug}', [PageController::class, 'show'])->name('public.pages.show');
 
 Route::post('/enquiries', [EnquiryController::class, 'store'])->name('public.enquiries.store');
 

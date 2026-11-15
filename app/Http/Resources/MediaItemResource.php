@@ -21,7 +21,6 @@ class MediaItemResource extends JsonResource
             'hotelId' => $this->hotel_id,
             'src' => $this->src,
             'alt' => $this->alt ?? '',
-            'inGallery' => (bool) $this->in_gallery,
             'createdByAdminId' => $this->created_by_admin_id,
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),

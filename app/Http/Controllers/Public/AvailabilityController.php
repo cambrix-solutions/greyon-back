@@ -27,7 +27,6 @@ class AvailabilityController extends Controller
             'rooms' => ['required', 'integer', 'min:1'],
             'adults' => ['required', 'integer', 'min:1'],
             'children' => ['required', 'integer', 'min:0'],
-            'offerCode' => ['nullable', 'string', 'max:64'],
         ]);
 
         $results = $this->bookings->search(
@@ -38,7 +37,6 @@ class AvailabilityController extends Controller
             (int) $data['children'],
             $data['locationSlug'] ?? null,
             $data['hotelSlug'] ?? null,
-            $data['offerCode'] ?? null,
         );
 
         $payload = array_map(fn (array $row) => [

@@ -18,6 +18,10 @@
       "value": ""
     },
     {
+      "key": "custom_role_id",
+      "value": ""
+    },
+    {
       "key": "feature_id",
       "value": ""
     },
@@ -2404,7 +2408,20 @@
               }
             },
             {
-              "name": "Create custom role",
+              "name": "List roles",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/roles"
+              }
+            },
+            {
+              "name": "Create custom role (copy id into custom_role_id)",
               "request": {
                 "method": "POST",
                 "header": [
@@ -2427,6 +2444,45 @@
                     }
                   }
                 }
+              }
+            },
+            {
+              "name": "Update custom role",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/roles/{{custom_role_id}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Front desk\",\n  \"description\": \"Reservations and guests\",\n  \"featureKeys\": [\n    \"bookings\",\n    \"guests\",\n    \"reports\"\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete custom role (400 while assigned)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/roles/{{custom_role_id}}"
               }
             }
           ]

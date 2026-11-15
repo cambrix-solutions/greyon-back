@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\InviteController;
 use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\MediaItemController;
 use App\Http\Controllers\Admin\NewsController;
+use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\RateCalendarController;
 use App\Http\Controllers\Admin\RatePlanController;
@@ -172,6 +173,15 @@ Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix'
     Route::get('/notifications/unread-count', [StaffNotificationController::class, 'unreadCount'])->name('notifications.unread');
     Route::post('/notifications/read-all', [StaffNotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::post('/notifications/{notification}/read', [StaffNotificationController::class, 'markRead'])->name('notifications.read');
+
+    // Pages CMS (Privacy, Terms, Booking terms...). Writes need a global seat.
+    Route::middleware('permission:pages')->group(function () {
+        Route::get('/pages', [PageController::class, 'index'])->name('pages.index');
+        Route::post('/pages', [PageController::class, 'store'])->name('pages.store');
+        Route::get('/pages/{page}', [PageController::class, 'show'])->name('pages.show');
+        Route::patch('/pages/{page}', [PageController::class, 'update'])->name('pages.update');
+        Route::delete('/pages/{page}', [PageController::class, 'destroy'])->name('pages.destroy');
+    });
 
     Route::middleware('permission:news')->group(function () {
         Route::get('/news', [NewsController::class, 'index'])->name('news.index');

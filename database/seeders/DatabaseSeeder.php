@@ -40,6 +40,7 @@ class DatabaseSeeder extends Seeder
         $this->call(MediaSeeder::class);
         $this->call(NewsSeeder::class);
         $this->call(HeroSlideSeeder::class);
+        $this->call(PageSeeder::class);
         $this->call(EnquirySeeder::class);
 
         // A guest customer you can log in with straight away.

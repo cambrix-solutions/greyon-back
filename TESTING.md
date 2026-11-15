@@ -596,6 +596,21 @@ Needs the `roles` feature (seeded for the org Admin seat; `php artisan migrate` 
 
 Then `GET /admin/seats` lists the new role, and `POST /admin/team` can assign it with `locationIds` (scope `location`) or `hotelIds` (scope `hotel`).
 
+## 15. Pages CMS (admin + public)
+
+Needs the `pages` feature (seeded for the org Admin seat; `php artisan migrate` adds it and creates the three legal pages as drafts). Writes need a global seat.
+
+| Call | Expect |
+|---|---|
+| `GET /admin/pages` | privacy, terms, booking-terms (`isSystem: true`) + any custom pages. |
+| `POST /admin/pages` `{"title":"FAQ","slug":"faq","status":"published","blocks":[{"type":"heading","level":2,"text":"Check-in"},{"type":"paragraph","text":"From 2 pm."}]}` | 201. |
+| block `type` not in heading / paragraph / list / image / callout / divider | 422 on `blocks.N.type`. |
+| image `url` = `javascript:...` | 422 (must start with `http(s)://`, `/` or `uploads/`). |
+| `PATCH /admin/pages/{id}` `{"slug":"x"}` on a built-in page | 400. |
+| `DELETE /admin/pages/{id}` on a built-in page | 400 (set it to draft instead); custom page: 200. |
+| `GET /pages/{slug}` (no login) | published page; a draft is 404. |
+| `GET /pages` (no login) | published pages (`slug`, `title`) for footer links. |
+
 ## What this doesn't cover yet
 
 The bookings-scope acceptance tests (a location-scoped manager → only

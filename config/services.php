@@ -44,6 +44,8 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
+        // Admin panel sign-in (invite by Google) - a second redirect URI on the same OAuth client.
+        'admin_redirect' => env('GOOGLE_ADMIN_REDIRECT_URI'),
     ],
 
 ];

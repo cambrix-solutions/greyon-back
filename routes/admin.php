@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Admin\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Admin\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Admin\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Admin\Auth\GoogleInviteController;
 use App\Http\Controllers\Admin\Auth\NewPasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
@@ -15,9 +16,11 @@ use App\Http\Controllers\Admin\CustomRoleController;
 use App\Http\Controllers\Admin\EnquiryController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\HotelController;
+use App\Http\Controllers\Admin\InviteController;
 use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\MediaItemController;
 use App\Http\Controllers\Admin\NewsController;
+use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\RateCalendarController;
 use App\Http\Controllers\Admin\RatePlanController;
@@ -61,6 +64,12 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.'], function () {
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
     Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
     Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
+
+    // Sign in with Google + invite acceptance (public; the invite token / Google decide access).
+    Route::get('/invites/{token}/preview', [GoogleInviteController::class, 'preview'])->middleware('throttle:20,1')->name('invites.preview');
+    Route::get('/auth/google/redirect', [GoogleInviteController::class, 'redirect'])->name('google.redirect');
+    Route::get('/auth/google/callback', [GoogleInviteController::class, 'callback'])->name('google.callback');
+    Route::post('/auth/google/exchange', [GoogleInviteController::class, 'exchange'])->middleware('throttle:20,1')->name('google.exchange');
 });
 
 // CMS catalog routes accept either the admin or developer guard so a
@@ -165,6 +174,15 @@ Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix'
     Route::post('/notifications/read-all', [StaffNotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::post('/notifications/{notification}/read', [StaffNotificationController::class, 'markRead'])->name('notifications.read');
 
+    // Pages CMS (Privacy, Terms, Booking terms...). Writes need a global seat.
+    Route::middleware('permission:pages')->group(function () {
+        Route::get('/pages', [PageController::class, 'index'])->name('pages.index');
+        Route::post('/pages', [PageController::class, 'store'])->name('pages.store');
+        Route::get('/pages/{page}', [PageController::class, 'show'])->name('pages.show');
+        Route::patch('/pages/{page}', [PageController::class, 'update'])->name('pages.update');
+        Route::delete('/pages/{page}', [PageController::class, 'destroy'])->name('pages.destroy');
+    });
+
     Route::middleware('permission:news')->group(function () {
         Route::get('/news', [NewsController::class, 'index'])->name('news.index');
         Route::post('/news', [NewsController::class, 'store'])->name('news.store');
@@ -214,6 +232,12 @@ Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix'
         Route::post('/team', [TeamController::class, 'store'])->name('team.store');
         Route::patch('/team/{target}', [TeamController::class, 'update'])->name('team.update');
         Route::delete('/team/{target}', [TeamController::class, 'destroy'])->name('team.destroy');
+
+        // Invite by Google (People page).
+        Route::get('/invites', [InviteController::class, 'index'])->name('invites.index');
+        Route::post('/invites', [InviteController::class, 'store'])->name('invites.store');
+        Route::post('/invites/{id}/resend', [InviteController::class, 'resend'])->whereNumber('id')->name('invites.resend');
+        Route::delete('/invites/{id}', [InviteController::class, 'destroy'])->whereNumber('id')->name('invites.destroy');
     });
 
     // Access -> Roles — org admin builds custom roles (packages) from the

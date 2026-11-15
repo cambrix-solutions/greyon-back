@@ -21,8 +21,10 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  *
  * A custom role is a Package (`is_system = false`, `created_by_admin_id` set)
  * - the same "seat" the People page already assigns - so People, scope
- * checks and permission middleware need no changes. The scope kind is carried
- * by an existing role: `location` -> `manager`, `hotel` -> `hotel_admin`.
+ * checks and permission middleware need no changes. A role has no scope of
+ * its own: it carries both base roles (`manager` and `hotel_admin`), so the
+ * destinations and hotels picked when the person is added decide where they
+ * work (at least one of the two is required, see SeatAssignmentService).
  *
  * Safety rules:
  *  - a role can only grant features the creating admin holds themselves
@@ -35,8 +37,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class CustomRoleController extends Controller
 {
-    /** scope kind -> the existing role that carries it. */
-    private const CARRIER_ROLES = ['location' => 'manager', 'hotel' => 'hotel_admin'];
+    /** Base roles every custom role carries, so it can be scoped to destinations and/or hotels. */
+    private const CARRIER_ROLES = ['manager', 'hotel_admin'];
 
     /** Never delegable from this page. */
     private const NEVER_GRANT = ['features'];
@@ -50,10 +52,6 @@ class CustomRoleController extends Controller
             ->values();
 
         return response()->json([
-            'scopes' => [
-                ['key' => 'location', 'label' => 'Specific destinations', 'description' => 'The person works in the destinations you pick when you add them.'],
-                ['key' => 'hotel', 'label' => 'Specific hotels', 'description' => 'The person works only in the hotels you pick when you add them.'],
-            ],
             'features' => $features,
         ]);
     }
@@ -67,7 +65,7 @@ class CustomRoleController extends Controller
                 $q->where(fn ($c) => $c->where('is_system', false)->whereNotNull('created_by_admin_id'))
                     ->orWhere(function ($s) {
                         $s->where('is_system', true)
-                            ->whereHas('roles', fn ($r) => $r->whereIn('name', array_values(self::CARRIER_ROLES)))
+                            ->whereHas('roles', fn ($r) => $r->whereIn('name', self::CARRIER_ROLES))
                             ->whereDoesntHave('roles', fn ($r) => $r->where('name', 'admin'));
                     });
             })
@@ -89,7 +87,7 @@ class CustomRoleController extends Controller
             'created_by_admin_id' => $request->user('admin')->id,
         ]);
 
-        $this->syncParts($request, $package, $data['scope'], $data['featureKeys']);
+        $this->syncParts($request, $package, $data['featureKeys']);
 
         return response()->json(['role' => new PackageResource($this->load($package))], 201);
     }
@@ -99,12 +97,6 @@ class CustomRoleController extends Controller
         $package = $this->customOrFail($id);
         $data = $this->validated($request, $package);
 
-        if (isset($data['scope']) && $data['scope'] !== $this->scopeOf($package) && $package->admins()->exists()) {
-            throw ValidationException::withMessages([
-                'scope' => 'This role is already assigned to people, so its scope cannot change. Create a new role instead.',
-            ]);
-        }
-
         $package->update([
             'name' => $data['name'] ?? $package->name,
             'description' => array_key_exists('description', $data) ? $data['description'] : $package->description,
@@ -113,9 +105,7 @@ class CustomRoleController extends Controller
         $this->syncParts(
             $request,
             $package,
-            $data['scope'] ?? $this->scopeOf($package),
             $data['featureKeys'] ?? $package->features()->pluck('key')->all(),
-            syncRole: isset($data['scope']),
         );
 
         return response()->json(['role' => new PackageResource($this->load($package))]);
@@ -157,7 +147,6 @@ class CustomRoleController extends Controller
         $data = $request->validate([
             'name' => [$package ? 'sometimes' : 'required', 'string', 'max:255', Rule::unique('packages', 'name')->ignore($package?->id)],
             'description' => ['nullable', 'string', 'max:1000'],
-            'scope' => [$package ? 'sometimes' : 'required', Rule::in(array_keys(self::CARRIER_ROLES))],
             'featureKeys' => [$package ? 'sometimes' : 'required', 'array', 'min:1'],
             'featureKeys.*' => ['string', 'distinct'],
         ]);
@@ -196,17 +185,15 @@ class CustomRoleController extends Controller
     /**
      * @param  list<string>  $featureKeys
      */
-    private function syncParts(Request $request, Package $package, string $scope, array $featureKeys, bool $syncRole = true): void
+    private function syncParts(Request $request, Package $package, array $featureKeys): void
     {
-        if ($syncRole) {
-            $roleId = Role::where('name', self::CARRIER_ROLES[$scope])->value('id');
+        $roleIds = Role::whereIn('name', self::CARRIER_ROLES)->pluck('id')->all();
 
-            if (! $roleId) {
-                throw new HttpException(500, 'The "'.self::CARRIER_ROLES[$scope].'" base role is missing. Run the seeders.');
-            }
-
-            $package->roles()->sync([$roleId]);
+        if (count($roleIds) !== count(self::CARRIER_ROLES)) {
+            throw new HttpException(500, 'The "manager" and "hotel_admin" base roles are required. Run the seeders.');
         }
+
+        $package->roles()->sync($roleIds);
 
         $package->features()->sync(Feature::whereIn('key', $featureKeys)->pluck('id'));
 
@@ -217,13 +204,6 @@ class CustomRoleController extends Controller
                 ->whereIn('key', $ownPermissions)
                 ->pluck('id')
         );
-    }
-
-    private function scopeOf(Package $package): ?string
-    {
-        $roleScope = $package->roles()->value('scope');
-
-        return in_array($roleScope, array_keys(self::CARRIER_ROLES), true) ? $roleScope : null;
     }
 
     private function load(Package $package): Package

@@ -2437,7 +2437,7 @@
                 "url": "{{base_url}}/admin/roles",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Front desk\",\n  \"description\": \"Reservations only\",\n  \"scope\": \"location\",\n  \"featureKeys\": [\n    \"bookings\",\n    \"guests\"\n  ]\n}",
+                  "raw": "{\n  \"name\": \"Front desk\",\n  \"description\": \"Reservations only\",\n  \"featureKeys\": [\n    \"bookings\",\n    \"guests\"\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"

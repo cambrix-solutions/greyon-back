@@ -22,6 +22,7 @@ class BookingService
 {
     public function __construct(
         private readonly BookingNotificationService $notifications,
+        private readonly OfferService $offers,
     ) {}
 
     /**
@@ -44,6 +45,7 @@ class BookingService
         int $children,
         ?string $locationSlug = null,
         ?string $hotelSlug = null,
+        ?string $offerCode = null,
     ): array {
         $this->assertDates($checkIn, $checkOut);
 
@@ -94,6 +96,7 @@ class BookingService
             ->groupBy(fn (RateCalendar $row) => $row->rate_plan_id.'|'.$row->date->format('Y-m-d'));
 
         $bookedByRoomDate = $this->bookedUnitsByRoomAndNight($roomTypeIds, $nightDates);
+        $publishedOffers = $this->offers->published();
 
         $results = [];
 
@@ -145,8 +148,14 @@ class BookingService
                         continue;
                     }
 
-                    $subtotal = $nightTotal * $rooms;
-                    $taxesFees = $subtotal * (((float) $plan->tax_percent + (float) $plan->service_fee_percent) / 100);
+                    $subtotal = round($nightTotal * $rooms, 2);
+
+                    // Best offer for this stay (automatic ones, plus the guest's code). The
+                    // discount comes off the room price; taxes and fees follow the lower amount.
+                    $applied = $this->offers->best($publishedOffers, $hotel, $checkIn, $checkOut, $nights, $subtotal, $offerCode);
+                    $discount = $applied['discount'] ?? 0.0;
+                    $taxable = $subtotal - $discount;
+                    $taxesFees = $taxable * (((float) $plan->tax_percent + (float) $plan->service_fee_percent) / 100);
 
                     $results[] = [
                         'hotel' => $hotel,
@@ -154,9 +163,11 @@ class BookingService
                         'ratePlan' => $plan,
                         'nights' => $nights,
                         'availableUnits' => $availableUnits,
-                        'subtotal' => round($subtotal, 2),
+                        'subtotal' => round($subtotal, 2),          // before the discount
+                        'discount' => round($discount, 2),
+                        'offer' => $applied['offer'] ?? null,
                         'taxesFees' => round($taxesFees, 2),
-                        'total' => round($subtotal + $taxesFees, 2),
+                        'total' => round($taxable + $taxesFees, 2),
                     ];
                 }
             }
@@ -199,6 +210,7 @@ class BookingService
             $input['children'],
             null,
             $hotel->slug,
+            $input['offer_code'] ?? null,
         );
 
         $match = collect($matches)->first(fn (array $row) => (int) $row['hotel']->id === (int) $input['hotel_id']
@@ -227,6 +239,9 @@ class BookingService
             'subtotal' => $match['subtotal'],
             'taxes_fees' => $match['taxesFees'],
             'total' => $match['total'],
+            'offer_id' => $match['offer']?->id,
+            'offer_title' => $match['offer']?->title,
+            'discount_total' => $match['discount'],
             'status' => $input['status'] ?? 'pending',
             'source' => $input['source'] ?? 'website',
             'notes' => $input['notes'] ?? null,

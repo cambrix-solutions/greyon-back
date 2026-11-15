@@ -44,6 +44,13 @@ class FeatureSeeder extends Seeder
             ['roles', 'Roles', 'Create custom roles and choose which features each role can use'],
             // Appended 2026-11-15: Pages CMS (Privacy, Terms, Booking terms...).
             ['pages', 'Pages', 'Edit Privacy, Terms, Reservation terms and other site pages'],
+            // Appended 2026-11-17: Guests and Reports pages (Phase 2, step 8).
+            ['guests', 'Guests', 'Guest list, reservation history and staff notes'],
+            ['reports', 'Reports', 'Reservation totals by destination, hotel and source, with CSV export'],
+            // Appended 2026-11-17: Calendar page (month grid + bulk edit).
+            ['calendar', 'Calendar', 'Month grid of units, reservations, stop-sell and prices, with bulk edit'],
+            // Appended 2026-11-17: Offers / special rates.
+            ['offers', 'Offers', 'Special rates and promo codes shown to guests and applied at quote time'],
         ];
 
         foreach ($adminParents as $i => [$key, $label, $description]) {

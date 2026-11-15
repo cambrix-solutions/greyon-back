@@ -55,6 +55,8 @@ class ReservationResource extends JsonResource
             ]),
             'pricing' => [
                 'subtotal' => $this->subtotal !== null ? (float) $this->subtotal : null,
+                'discount' => (float) ($this->discount_total ?? 0),
+                'offerTitle' => $this->offer_title,
                 'taxesFees' => $this->taxes_fees !== null ? (float) $this->taxes_fees : null,
                 'total' => $this->total !== null ? (float) $this->total : null,
             ],

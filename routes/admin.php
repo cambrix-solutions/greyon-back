@@ -10,10 +10,13 @@ use App\Http\Controllers\Admin\Auth\NewPasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Admin\Auth\VerifyEmailController;
+use App\Http\Controllers\Admin\AdminOfferController;
 use App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\CustomRoleController;
 use App\Http\Controllers\Admin\EnquiryController;
+use App\Http\Controllers\Admin\CalendarController;
+use App\Http\Controllers\Admin\GuestController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\HotelController;
 use App\Http\Controllers\Admin\InviteController;
@@ -21,6 +24,7 @@ use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\MediaItemController;
 use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\Admin\PageController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\RateCalendarController;
 use App\Http\Controllers\Admin\RatePlanController;
@@ -166,6 +170,33 @@ Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix'
         Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
         Route::patch('/bookings/{booking}', [BookingController::class, 'update'])->name('bookings.update');
         Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
+    });
+
+    // Offers / special rates (hotel, destination or everywhere; scoped seats only touch their own).
+    Route::middleware('permission:offers')->group(function () {
+        Route::get('/offers', [AdminOfferController::class, 'index'])->name('offers.index');
+        Route::post('/offers', [AdminOfferController::class, 'store'])->name('offers.store');
+        Route::get('/offers/{offer}', [AdminOfferController::class, 'show'])->whereNumber('offer')->name('offers.show');
+        Route::patch('/offers/{offer}', [AdminOfferController::class, 'update'])->whereNumber('offer')->name('offers.update');
+        Route::delete('/offers/{offer}', [AdminOfferController::class, 'destroy'])->whereNumber('offer')->name('offers.destroy');
+    });
+
+    // Calendar: month grid + bulk edit of units, stop-sell, prices and stay rules.
+    Route::middleware('permission:calendar')->group(function () {
+        Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+        Route::put('/calendar/bulk', [CalendarController::class, 'bulk'])->name('calendar.bulk');
+    });
+
+    // Guests (people on reservations, matched by e-mail) and Reports - both scoped to the seat's hotels.
+    Route::middleware('permission:guests')->group(function () {
+        Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
+        Route::get('/guests/profile', [GuestController::class, 'show'])->name('guests.show');
+        Route::put('/guests/note', [GuestController::class, 'note'])->name('guests.note');
+    });
+
+    Route::middleware('permission:reports')->group(function () {
+        Route::get('/reports/summary', [ReportController::class, 'summary'])->name('reports.summary');
+        Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
     });
 
     // Booking inbox — scoped by AccessService on fan-out; list is per recipient.

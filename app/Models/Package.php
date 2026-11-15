@@ -20,6 +20,7 @@ class Package extends Model
         'description',
         'price_note',
         'is_system',
+        'created_by_admin_id',
     ];
 
     protected function casts(): array

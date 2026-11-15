@@ -25,6 +25,14 @@ class LocationResource extends JsonResource
             'heroImage' => $this->hero_image,
             'gallery' => $this->gallery ?? [],
             'highlights' => $this->highlights ?? [],
+            'landmarks' => collect($this->landmarks ?? [])
+                ->map(fn ($row) => [
+                    'place' => is_array($row) ? ($row['place'] ?? '') : '',
+                    'distance' => is_array($row) ? ($row['distance'] ?? '') : '',
+                ])
+                ->filter(fn ($row) => filled($row['place']))
+                ->values()
+                ->all(),
             'status' => $this->status,
             'seoTitle' => $this->seo_title,
             'seoDescription' => $this->seo_description,

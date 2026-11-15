@@ -38,7 +38,7 @@ class RoleSeeder extends Seeder
             ],
             [
                 'name' => 'customer',
-                'description' => 'Guest / customer — public site only; self-serve booking; sees own stays. Not an admin seat.',
+                'description' => 'Guest / customer — public site only; self-serve reservation; sees own stays. Not an admin seat.',
                 'is_global' => false,
                 'scope' => 'none',
             ],

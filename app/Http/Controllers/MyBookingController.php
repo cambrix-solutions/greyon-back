@@ -52,7 +52,7 @@ class MyBookingController extends Controller
             ->first();
 
         if (! $booking) {
-            throw new HttpException(404, 'Booking not found');
+            throw new HttpException(404, 'Reservation not found');
         }
 
         return response()->json([

@@ -34,7 +34,7 @@ class BookingNotificationService
             booking: $booking,
             hotel: $hotel,
             type: 'booking.created',
-            title: 'New booking',
+            title: 'New reservation',
             body: sprintf(
                 '%s · %s · %s → %s · %s',
                 $booking->reference,
@@ -67,7 +67,7 @@ class BookingNotificationService
             booking: $booking,
             hotel: $hotel,
             type: 'booking.status_changed',
-            title: 'Booking '.$to,
+            title: 'Reservation '.$to,
             body: sprintf(
                 '%s · %s · %s → %s',
                 $booking->reference,

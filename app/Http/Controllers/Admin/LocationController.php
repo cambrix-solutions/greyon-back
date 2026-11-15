@@ -199,7 +199,7 @@ class LocationController extends Controller
      */
     private function authorizeFields(Admin $admin, array $data): void
     {
-        $contentFields = ['name', 'slug', 'description', 'phone', 'email', 'hero_image', 'gallery', 'highlights'];
+        $contentFields = ['name', 'slug', 'description', 'phone', 'email', 'hero_image', 'gallery', 'highlights', 'landmarks'];
 
         if (array_intersect($contentFields, array_keys($data)) !== [] && ! $this->access->hasPermission($admin, 'locations_list')) {
             throw new HttpException(403, 'Missing permission: locations_list');
@@ -238,6 +238,9 @@ class LocationController extends Controller
             'gallery.*' => ['string'],
             'highlights' => ['array'],
             'highlights.*' => ['string'],
+            'landmarks' => ['array', 'max:50'],
+            'landmarks.*.place' => ['required', 'string', 'max:255'],
+            'landmarks.*.distance' => ['nullable', 'string', 'max:100'],
             'status' => ['sometimes', Rule::in(['draft', 'published', 'archived'])],
             'seoTitle' => ['nullable', 'string', 'max:255'],
             'seoDescription' => ['nullable', 'string'],

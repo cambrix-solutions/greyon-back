@@ -611,6 +611,16 @@ Needs the `pages` feature (seeded for the org Admin seat; `php artisan migrate` 
 | `GET /pages/{slug}` (no login) | published page; a draft is 404. |
 | `GET /pages` (no login) | published pages (`slug`, `title`) for footer links. |
 
+## 16. Public data and wording
+
+| Call | Expect |
+|---|---|
+| `GET /catalog` (public catalog; same URL the SPA hydrates from) | each `roomTypes[]` has `hotelName` and `hotel {id, name, slug}`; `panoramaUrl` present when a 360 image exists. |
+| `PATCH /admin/locations/{id}` `{"landmarks":[{"place":"Royal Palace","distance":"1.2 km"}]}` | 200; `location.landmarks` echoes it. Blank `place` is 422. Needs `locations_list`. |
+| `GET /catalog` | each `locations[]` has `landmarks` (empty list if none). |
+| Create a reservation, then check `GET /notifications` | title is "New reservation"; after a status change, "Reservation <status>". |
+| `GET /bookings/{unknown-reference}` | 404 "Reservation not found". |
+
 ## What this doesn't cover yet
 
 The bookings-scope acceptance tests (a location-scoped manager → only

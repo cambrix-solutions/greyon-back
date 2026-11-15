@@ -15,6 +15,7 @@ class Page extends Model
         'privacy' => 'Privacy Policy',
         'terms' => 'Terms & Conditions',
         'booking-terms' => 'Reservation Terms',
+        'faq' => 'Frequently Asked Questions',
     ];
 
     protected $fillable = [

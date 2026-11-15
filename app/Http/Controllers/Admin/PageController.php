@@ -23,13 +23,14 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  *   list      {type, style: bullet|number, items: [text]}
  *   image     {type, url, alt?, caption?}
  *   callout   {type, text}
+ *   faq       {type, items: [{question, answer}]}
  *   divider   {type}
  */
 class PageController extends Controller
 {
     use AuthorizesAdminPanel;
 
-    private const BLOCK_TYPES = ['heading', 'paragraph', 'list', 'image', 'callout', 'divider'];
+    private const BLOCK_TYPES = ['heading', 'paragraph', 'list', 'image', 'callout', 'divider', 'faq'];
 
     public function __construct(private readonly AccessService $access) {}
 
@@ -107,8 +108,7 @@ class PageController extends Controller
             'blocks.*.text' => ['required_if:blocks.*.type,heading,paragraph,callout', 'nullable', 'string', 'max:10000'],
             'blocks.*.level' => ['required_if:blocks.*.type,heading', 'nullable', Rule::in([2, 3])],
             'blocks.*.style' => ['required_if:blocks.*.type,list', 'nullable', Rule::in(['bullet', 'number'])],
-            'blocks.*.items' => ['required_if:blocks.*.type,list', 'nullable', 'array', 'max:100'],
-            'blocks.*.items.*' => ['string', 'max:2000'],
+            'blocks.*.items' => ['required_if:blocks.*.type,list,faq', 'nullable', 'array', 'max:100'],
             'blocks.*.url' => ['required_if:blocks.*.type,image', 'nullable', 'string', 'max:2048', 'regex:/^(https?:\/\/|\/|uploads\/)/i'],
             'blocks.*.alt' => ['nullable', 'string', 'max:255'],
             'blocks.*.caption' => ['nullable', 'string', 'max:500'],
@@ -145,7 +145,22 @@ class PageController extends Controller
             'heading' => ['type' => 'heading', 'level' => (int) $b['level'], 'text' => $b['text']],
             'paragraph' => ['type' => 'paragraph', 'text' => $b['text']],
             'callout' => ['type' => 'callout', 'text' => $b['text']],
-            'list' => ['type' => 'list', 'style' => $b['style'], 'items' => array_values($b['items'])],
+            'list' => ['type' => 'list', 'style' => $b['style'], 'items' => array_values(array_map(function ($i) {
+                abort_if(! is_string($i) || $i === '' || mb_strlen($i) > 2000, 422, 'List items must be text of up to 2000 characters.');
+
+                return $i;
+            }, $b['items']))],
+            'faq' => ['type' => 'faq', 'items' => array_values(array_map(function ($i) {
+                abort_if(
+                    ! is_array($i) || ! is_string($i['question'] ?? null) || ! is_string($i['answer'] ?? null)
+                    || $i['question'] === '' || $i['answer'] === ''
+                    || mb_strlen($i['question']) > 500 || mb_strlen($i['answer']) > 5000,
+                    422,
+                    'Every FAQ item needs a question (up to 500 characters) and an answer (up to 5000).'
+                );
+
+                return ['question' => $i['question'], 'answer' => $i['answer']];
+            }, $b['items']))],
             'image' => ['type' => 'image', 'url' => $b['url'], 'alt' => $b['alt'] ?? null, 'caption' => $b['caption'] ?? null],
             default => ['type' => 'divider'],
         };

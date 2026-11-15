@@ -2118,514 +2118,7 @@
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "Public",
-      "item": [
-        {
-          "name": "List Locations",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/locations"
-          }
         },
-        {
-          "name": "Get Location by slug",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/locations/siem-reap"
-          }
-        },
-        {
-          "name": "List Hotels",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/hotels"
-          }
-        },
-        {
-          "name": "List Hotels — by location",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/hotels?locationSlug=siem-reap"
-          }
-        },
-        {
-          "name": "List Hotels — featured",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/hotels?featured=1"
-          }
-        },
-        {
-          "name": "Get Hotel by slug",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/hotels/riverside"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Front",
-      "item": [
-        {
-          "name": "Auth",
-          "item": [
-            {
-              "name": "Verify",
-              "item": [
-                {
-                  "name": "Verify Email Notice",
-                  "request": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Accept",
-                        "value": "application/json"
-                      }
-                    ],
-                    "url": "{{base_url}}/verify-email"
-                  }
-                },
-                {
-                  "name": "Resend Verification Email",
-                  "request": {
-                    "method": "POST",
-                    "header": [
-                      {
-                        "key": "Accept",
-                        "value": "application/json"
-                      }
-                    ],
-                    "url": "{{base_url}}/email/verification-notification"
-                  }
-                },
-                {
-                  "name": "Confirm Password",
-                  "request": {
-                    "method": "POST",
-                    "header": [
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                      },
-                      {
-                        "key": "Accept",
-                        "value": "application/json"
-                      }
-                    ],
-                    "url": "{{base_url}}/confirm-password",
-                    "body": {
-                      "mode": "raw",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      },
-                      "raw": "{\n    \"password\": \"password\"\n}"
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "name": "Guest",
-              "item": [
-                {
-                  "name": "Dashboard",
-                  "request": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Accept",
-                        "value": "application/json"
-                      }
-                    ],
-                    "url": "{{base_url}}/dashboard"
-                  }
-                }
-              ]
-            },
-            {
-              "name": "Manager",
-              "item": [
-                {
-                  "name": "Dashboard",
-                  "request": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Accept",
-                        "value": "application/json"
-                      }
-                    ],
-                    "url": "{{base_url}}/manager"
-                  }
-                }
-              ]
-            },
-            {
-              "name": "Register",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/register",
-                "body": {
-                  "mode": "raw",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  },
-                  "raw": "{\n    \"name\": \"Jane Doe\",\n    \"email\": \"jane@example.com\",\n    \"password\": \"password\",\n    \"password_confirmation\": \"password\",\n    \"phone\": \"012345678\"\n}"
-                }
-              }
-            },
-            {
-              "name": "Login",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/login",
-                "body": {
-                  "mode": "raw",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  },
-                  "raw": "{\n    \"email\": \"guest@greyon.test\",\n    \"password\": \"password\"\n}"
-                }
-              }
-            },
-            {
-              "name": "Login with Google (open in browser, not Bruno)",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/auth/google/redirect",
-                "description": "This is a browser redirect flow (Google's consent screen), so Bruno's Send button can't complete it. Paste {{base_url}}/auth/google/redirect into an actual browser tab instead; Google sends it back to /auth/google/callback, which logs the guest in and hands back the same cookie session every other request here uses."
-              }
-            },
-            {
-              "name": "Logout",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/logout"
-              }
-            },
-            {
-              "name": "Forgot Password",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/forgot-password",
-                "body": {
-                  "mode": "raw",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  },
-                  "raw": "{\n    \"email\": \"guest@greyon.test\"\n}"
-                }
-              }
-            },
-            {
-              "name": "Reset Password",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/reset-password",
-                "body": {
-                  "mode": "raw",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  },
-                  "raw": "{\n    \"token\": \"paste-token-from-storage/logs/laravel.log\",\n    \"email\": \"guest@greyon.test\",\n    \"password\": \"newpassword\",\n    \"password_confirmation\": \"newpassword\"\n}"
-                }
-              }
-            },
-            {
-              "name": "Update Password",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/password",
-                "body": {
-                  "mode": "raw",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  },
-                  "raw": "{\n    \"current_password\": \"password\",\n    \"password\": \"newpassword\",\n    \"password_confirmation\": \"newpassword\"\n}"
-                }
-              }
-            },
-            {
-              "name": "Current User",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/user"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Phase 2 — Public (existing guest endpoints)",
-      "item": [
-        {
-          "name": "Availability and booking",
-          "item": [
-            {
-              "name": "Search availability",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/availability?hotelSlug=greyon-pp&checkIn=2026-12-10&checkOut=2026-12-13&rooms=1&adults=2&children=0",
-                "description": "Each result has subtotal (before discount), discount, offer, taxesFees and total."
-              }
-            },
-            {
-              "name": "Create reservation",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/bookings",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"hotelId\": \"{{hotel_id}}\",\n  \"roomTypeId\": \"{{room_type_id}}\",\n  \"ratePlanId\": \"{{rate_plan_id}}\",\n  \"checkIn\": \"2026-12-10\",\n  \"checkOut\": \"2026-12-13\",\n  \"rooms\": 1,\n  \"adults\": 2,\n  \"children\": 0,\n  \"guestFullName\": \"Test Guest\",\n  \"guestEmail\": \"guest@example.com\",\n  \"guestPhone\": \"+855 12 345 678\",\n  \"specialRequests\": \"\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              },
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "type": "text/javascript",
-                    "exec": [
-                      "const j = pm.response.json();",
-                      "const v = j.booking && j.booking.reference;",
-                      "if (v !== undefined && v !== null) pm.collectionVariables.set('booking_reference', v);"
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "name": "Get booking by reference (legacy)",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/bookings/{{booking_reference}}"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Other public",
-          "item": [
-            {
-              "name": "News list",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/news"
-              }
-            },
-            {
-              "name": "Hero slides",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/hero-slides"
-              }
-            },
-            {
-              "name": "Site settings",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/settings"
-              }
-            },
-            {
-              "name": "Send enquiry",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/enquiries",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Test Guest\",\n  \"email\": \"guest@example.com\",\n  \"phone\": \"+855 12 345 678\",\n  \"locationId\": \"{{location_id}}\",\n  \"subject\": \"Question\",\n  \"message\": \"Hello\",\n  \"consent\": true\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Phase 2 — Admin (staff panel)",
-      "item": [
         {
           "name": "Reservations",
           "item": [
@@ -2938,8 +2431,504 @@
             }
           ]
         }
-      ],
-      "description": "Sign in under Admin > Auth first. A seat only sees what its package allows; out-of-scope records return 404."
+      ]
+    },
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "List Locations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/locations"
+          }
+        },
+        {
+          "name": "Get Location by slug",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/locations/siem-reap"
+          }
+        },
+        {
+          "name": "List Hotels",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/hotels"
+          }
+        },
+        {
+          "name": "List Hotels — by location",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/hotels?locationSlug=siem-reap"
+          }
+        },
+        {
+          "name": "List Hotels — featured",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/hotels?featured=1"
+          }
+        },
+        {
+          "name": "Get Hotel by slug",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/hotels/riverside"
+          }
+        },
+        {
+          "name": "Availability and booking",
+          "item": [
+            {
+              "name": "Search availability",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/availability?hotelSlug=greyon-pp&checkIn=2026-12-10&checkOut=2026-12-13&rooms=1&adults=2&children=0",
+                "description": "Each result has subtotal (before discount), discount, offer, taxesFees and total."
+              }
+            },
+            {
+              "name": "Create reservation",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/bookings",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"hotelId\": \"{{hotel_id}}\",\n  \"roomTypeId\": \"{{room_type_id}}\",\n  \"ratePlanId\": \"{{rate_plan_id}}\",\n  \"checkIn\": \"2026-12-10\",\n  \"checkOut\": \"2026-12-13\",\n  \"rooms\": 1,\n  \"adults\": 2,\n  \"children\": 0,\n  \"guestFullName\": \"Test Guest\",\n  \"guestEmail\": \"guest@example.com\",\n  \"guestPhone\": \"+855 12 345 678\",\n  \"specialRequests\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const j = pm.response.json();",
+                      "const v = j.booking && j.booking.reference;",
+                      "if (v !== undefined && v !== null) pm.collectionVariables.set('booking_reference', v);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get booking by reference (legacy)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/bookings/{{booking_reference}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Other public",
+          "item": [
+            {
+              "name": "News list",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/news"
+              }
+            },
+            {
+              "name": "Hero slides",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/hero-slides"
+              }
+            },
+            {
+              "name": "Site settings",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/settings"
+              }
+            },
+            {
+              "name": "Send enquiry",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/enquiries",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Test Guest\",\n  \"email\": \"guest@example.com\",\n  \"phone\": \"+855 12 345 678\",\n  \"locationId\": \"{{location_id}}\",\n  \"subject\": \"Question\",\n  \"message\": \"Hello\",\n  \"consent\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Front",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "Verify",
+              "item": [
+                {
+                  "name": "Verify Email Notice",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": "{{base_url}}/verify-email"
+                  }
+                },
+                {
+                  "name": "Resend Verification Email",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": "{{base_url}}/email/verification-notification"
+                  }
+                },
+                {
+                  "name": "Confirm Password",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": "{{base_url}}/confirm-password",
+                    "body": {
+                      "mode": "raw",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      },
+                      "raw": "{\n    \"password\": \"password\"\n}"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Guest",
+              "item": [
+                {
+                  "name": "Dashboard",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": "{{base_url}}/dashboard"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Manager",
+              "item": [
+                {
+                  "name": "Dashboard",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": "{{base_url}}/manager"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Register",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/register",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n    \"name\": \"Jane Doe\",\n    \"email\": \"jane@example.com\",\n    \"password\": \"password\",\n    \"password_confirmation\": \"password\",\n    \"phone\": \"012345678\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Login",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/login",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n    \"email\": \"guest@greyon.test\",\n    \"password\": \"password\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Login with Google (open in browser, not Bruno)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/auth/google/redirect",
+                "description": "This is a browser redirect flow (Google's consent screen), so Bruno's Send button can't complete it. Paste {{base_url}}/auth/google/redirect into an actual browser tab instead; Google sends it back to /auth/google/callback, which logs the guest in and hands back the same cookie session every other request here uses."
+              }
+            },
+            {
+              "name": "Logout",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/logout"
+              }
+            },
+            {
+              "name": "Forgot Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/forgot-password",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n    \"email\": \"guest@greyon.test\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Reset Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/reset-password",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n    \"token\": \"paste-token-from-storage/logs/laravel.log\",\n    \"email\": \"guest@greyon.test\",\n    \"password\": \"newpassword\",\n    \"password_confirmation\": \"newpassword\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Password",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/password",
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\n    \"current_password\": \"password\",\n    \"password\": \"newpassword\",\n    \"password_confirmation\": \"newpassword\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Current User",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/user"
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Admin\Auth\VerifyEmailController;
 use App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BookingController;
+use App\Http\Controllers\Admin\CustomRoleController;
 use App\Http\Controllers\Admin\EnquiryController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\HotelController;
@@ -66,7 +67,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.'], function () {
 // developer session can open Destinations / Hotels / Rooms without a
 // fake "Unauthenticated." 401 (SPA was treating that as logout).
 // Session endpoints (/me, /logout, password) stay admin-only.
-Route::group(['middleware' => 'auth:admin,developer', 'prefix' => 'admin', 'as' => 'admin.'], function () {
+Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix' => 'admin', 'as' => 'admin.'], function () {
     Route::middleware('auth:admin')->group(function () {
         Route::get('/me', [AuthenticatedSessionController::class, 'show'])->name('me');
         Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -213,5 +214,15 @@ Route::group(['middleware' => 'auth:admin,developer', 'prefix' => 'admin', 'as' 
         Route::post('/team', [TeamController::class, 'store'])->name('team.store');
         Route::patch('/team/{target}', [TeamController::class, 'update'])->name('team.update');
         Route::delete('/team/{target}', [TeamController::class, 'destroy'])->name('team.destroy');
+    });
+
+    // Access -> Roles — org admin builds custom roles (packages) from the
+    // features they hold themselves. People assigns them via /seats.
+    Route::middleware(['auth:admin', 'permission:roles'])->group(function () {
+        Route::get('/roles/options', [CustomRoleController::class, 'options'])->name('roles.options');
+        Route::get('/roles', [CustomRoleController::class, 'index'])->name('roles.index');
+        Route::post('/roles', [CustomRoleController::class, 'store'])->name('roles.store');
+        Route::patch('/roles/{id}', [CustomRoleController::class, 'update'])->whereNumber('id')->name('roles.update');
+        Route::delete('/roles/{id}', [CustomRoleController::class, 'destroy'])->whereNumber('id')->name('roles.destroy');
     });
 });

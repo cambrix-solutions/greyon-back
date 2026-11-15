@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
             'permission' => \App\Http\Middleware\EnsurePermission::class,
+            'admin.active' => \App\Http\Middleware\EnsureAdminActive::class,
         ]);
 
         // Coolify / reverse proxies terminate TLS; trust X-Forwarded-* so

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Admin;
 use App\Models\Booking;
+use App\Models\BookingEvent;
 use App\Models\Developer;
 use App\Models\Hotel;
 use App\Models\StaffNotification;
@@ -24,6 +25,8 @@ class BookingNotificationService
 
     public function notifyCreated(Booking $booking): void
     {
+        BookingEvent::record($booking, 'created', null, $booking->status);
+
         $booking->loadMissing('hotel.location');
         $hotel = $booking->hotel;
         if (! $hotel) {
@@ -56,6 +59,8 @@ class BookingNotificationService
         if ($from === $to) {
             return;
         }
+
+        BookingEvent::record($booking, 'status_changed', $from, $to);
 
         $booking->loadMissing('hotel.location');
         $hotel = $booking->hotel;

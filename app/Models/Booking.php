@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Guest or admin-created reservation.
@@ -55,6 +56,22 @@ class Booking extends Model
     /**
      * @return BelongsTo<User, $this>
      */
+    /** Number of nights between check-in and check-out. */
+    public function nights(): int
+    {
+        if (! $this->check_in || ! $this->check_out) {
+            return 0;
+        }
+
+        return max(0, (int) $this->check_in->diffInDays($this->check_out));
+    }
+
+    /** @return HasMany<BookingEvent, $this> */
+    public function events(): HasMany
+    {
+        return $this->hasMany(BookingEvent::class)->orderBy('created_at')->orderBy('id');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

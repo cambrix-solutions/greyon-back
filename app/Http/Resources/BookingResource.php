@@ -56,7 +56,17 @@ class BookingResource extends JsonResource
             'total' => $this->total !== null ? (float) $this->total : null,
             'status' => $this->status,
             'source' => $this->source,
-            'notes' => $this->notes,
+            'notes' => $this->when(! $request->routeIs('public.*', 'my.*'), $this->notes),
+            'nights' => $this->nights(),
+            'events' => $this->whenLoaded('events', fn () => $this->events->map(fn ($e) => [
+                'type' => $e->type,
+                'fromStatus' => $e->from_status,
+                'toStatus' => $e->to_status,
+                'actorType' => $e->actor_type,
+                'actorId' => $e->actor_id,
+                'note' => $e->note,
+                'at' => $e->created_at?->toIso8601String(),
+            ])->values()),
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),
         ];

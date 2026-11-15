@@ -621,6 +621,17 @@ Needs the `pages` feature (seeded for the org Admin seat; `php artisan migrate` 
 | Create a reservation, then check `GET /notifications` | title is "New reservation"; after a status change, "Reservation <status>". |
 | `GET /bookings/{unknown-reference}` | 404 "Reservation not found". |
 
+## 17. Reservation timeline, find-my-reservation, receipt
+
+| Call | Expect |
+|---|---|
+| `POST /reservations/lookup` `{"reference":"GRY-ABC123","email":"guest@x.com"}` (no login) | `reservation` with `nights`, `hotel`, `roomType`, `ratePlan.cancellationPolicy`, `pricing` (receipt), `timeline`. No internal notes. |
+| same with the wrong email, or an unknown reference | the same 404 message for both. More than 10 tries a minute: 429. |
+| `GET /admin/bookings/{id}` | `booking.events` (who changed what, when) and `booking.nights`. |
+| `PATCH /admin/bookings/{id}` `{"status":"confirmed"}`, then GET it again | a `status_changed` event from pending to confirmed with your admin as `actorType`. |
+| `GET /my/bookings/{reference}` (signed-in guest) | the existing `booking` plus a new `reservation` (same shape as the lookup). |
+| `GET /bookings/{reference}` (public) | unchanged, but `notes` is no longer included. |
+
 ## What this doesn't cover yet
 
 The bookings-scope acceptance tests (a location-scoped manager → only

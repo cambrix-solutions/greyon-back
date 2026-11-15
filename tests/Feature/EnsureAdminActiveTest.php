@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class EnsureAdminActiveTest extends TestCase
 {
-    private function run(?Admin $admin): \Symfony\Component\HttpFoundation\Response
+    private function handle(?Admin $admin): \Symfony\Component\HttpFoundation\Response
     {
         if ($admin) {
             Auth::guard('admin')->setUser($admin);
@@ -24,14 +24,14 @@ class EnsureAdminActiveTest extends TestCase
 
     public function test_active_admin_passes(): void
     {
-        $response = $this->run(Admin::factory()->make(['id' => 1, 'status' => 'active']));
+        $response = $this->handle(Admin::factory()->make(['id' => 1, 'status' => 'active']));
 
         $this->assertSame(200, $response->getStatusCode());
     }
 
     public function test_inactive_admin_is_signed_out_with_401(): void
     {
-        $response = $this->run(Admin::factory()->make(['id' => 1, 'status' => 'inactive']));
+        $response = $this->handle(Admin::factory()->make(['id' => 1, 'status' => 'inactive']));
 
         $this->assertSame(401, $response->getStatusCode());
         $this->assertStringContainsString('not active', $response->getContent());
@@ -41,6 +41,6 @@ class EnsureAdminActiveTest extends TestCase
     public function test_request_without_admin_passes_through(): void
     {
         // Developer-only requests carry no admin user; the auth guard decides those.
-        $this->assertSame(200, $this->run(null)->getStatusCode());
+        $this->assertSame(200, $this->handle(null)->getStatusCode());
     }
 }

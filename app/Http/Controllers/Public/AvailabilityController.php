@@ -27,6 +27,7 @@ class AvailabilityController extends Controller
             'rooms' => ['required', 'integer', 'min:1'],
             'adults' => ['required', 'integer', 'min:1'],
             'children' => ['required', 'integer', 'min:0'],
+            'offerCode' => ['nullable', 'string', 'max:64'],
         ]);
 
         $results = $this->bookings->search(
@@ -37,6 +38,7 @@ class AvailabilityController extends Controller
             (int) $data['children'],
             $data['locationSlug'] ?? null,
             $data['hotelSlug'] ?? null,
+            $data['offerCode'] ?? null,
         );
 
         $payload = array_map(fn (array $row) => [
@@ -47,6 +49,14 @@ class AvailabilityController extends Controller
             'availableUnits' => $row['availableUnits'],
             'subtotal' => $row['subtotal'],
             'taxesFees' => $row['taxesFees'],
+            'discount' => $row['discount'],
+            'offer' => $row['offer'] ? [
+                'id' => $row['offer']->id,
+                'slug' => $row['offer']->slug,
+                'title' => $row['offer']->title,
+                'discountType' => $row['offer']->discount_type,
+                'discountValue' => (float) $row['offer']->discount_value,
+            ] : null,
             'total' => $row['total'],
         ], $results);
 

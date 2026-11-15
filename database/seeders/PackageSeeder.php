@@ -69,6 +69,11 @@ class PackageSeeder extends Seeder
             // own hotels too.
             'services',
             'products',
+            // 2026-11-17: managers see guests and reports for their own hotels.
+            'guests',
+            'reports',
+            'calendar',
+            'offers',
         ];
         $managerLimits = ['locations' => 0, 'hotels_per_location' => null];
 

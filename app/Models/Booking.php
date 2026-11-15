@@ -33,6 +33,9 @@ class Booking extends Model
         'status',
         'source',
         'notes',
+        'offer_id',
+        'offer_title',
+        'discount_total',
     ];
 
     protected function casts(): array
@@ -50,6 +53,7 @@ class Booking extends Model
             'subtotal' => 'decimal:2',
             'taxes_fees' => 'decimal:2',
             'total' => 'decimal:2',
+            'discount_total' => 'decimal:2',
         ];
     }
 

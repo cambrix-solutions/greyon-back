@@ -38,6 +38,7 @@ class BookingController extends Controller
             'guestEmail' => ['required', 'email', 'max:255'],
             'guestPhone' => ['required', 'string', 'max:255'],
             'specialRequests' => ['nullable', 'string'],
+            'offerCode' => ['nullable', 'string', 'max:64'],
         ]);
 
         $payload = $this->mapCamel($data);
@@ -102,6 +103,7 @@ class BookingController extends Controller
             'guestEmail' => 'guest_email',
             'guestPhone' => 'guest_phone',
             'specialRequests' => 'special_requests',
+            'offerCode' => 'offer_code',
         ];
 
         foreach ($map as $camel => $snake) {

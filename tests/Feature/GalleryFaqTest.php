@@ -36,6 +36,7 @@ class GalleryFaqTest extends TestCase
             '2026_09_14_000005_create_packages_table',
             '2026_09_14_000006_create_package_role_table',
             '2026_09_14_000007_create_package_feature_table',
+            '2026_11_20_000100_add_actions_to_package_feature_table',
             '2026_09_14_000008_create_admin_package_table',
             '2026_09_16_000001_create_package_limits_table',
             '2026_09_16_000003_create_permissions_table',

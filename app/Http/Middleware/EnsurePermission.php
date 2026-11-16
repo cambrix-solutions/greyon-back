@@ -40,6 +40,14 @@ class EnsurePermission
             throw new HttpException(403, "Missing permission: {$perm}");
         }
 
+        // Per-feature actions (Access -> Roles): a role can hold a feature
+        // for viewing only, or without delete, and so on. Seats saved before
+        // actions existed hold every action, so nothing changes for them.
+        $action = AccessService::actionForRequest($request->method(), $request->route()?->getName());
+
+        if (! $this->access->canAction($admin, $perm, $action)) {
+            throw new HttpException(403, "Missing permission: {$perm} ({$action})");
+        }
         return $next($request);
     }
 }

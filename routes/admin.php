@@ -197,6 +197,7 @@ Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix'
     Route::middleware('permission:guests')->group(function () {
         Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
         Route::get('/guests/profile', [GuestController::class, 'show'])->name('guests.show');
+        Route::get('/guests/export', [GuestController::class, 'export'])->name('guests.export');
         Route::put('/guests/note', [GuestController::class, 'note'])->name('guests.note');
     });
 

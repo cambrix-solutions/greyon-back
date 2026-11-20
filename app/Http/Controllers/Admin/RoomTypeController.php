@@ -8,6 +8,7 @@ use App\Http\Resources\RoomTypeResource;
 use App\Models\Hotel;
 use App\Models\RoomType;
 use App\Services\AccessService;
+use App\Services\PanoramaCompressor;
 use App\Services\RoomPanoramaStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,7 +36,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * reasoning as Location/Hotel: not something this round's instruction
  * touched.
  *
- * `panorama` (multipart file, jpg/webp, max 15 MB) is an optional 360°
+ * `panorama` (multipart file, jpg/webp, max 25 MB, shrunk on upload) is an optional 360°
  * image. Equirectangular 2:1 is recommended and not enforced. The file
  * is stored on the public disk under `uploads/rooms/{id}/`, the same
  * disk as seeded room photos and the same uploads/ prefix as other
@@ -138,8 +139,8 @@ class RoomTypeController extends Controller
             'description' => ['nullable', 'string'],
             'images' => ['array'],
             'images.*' => ['string', 'max:2048'],
-            // jpg/webp, 15 MB. 2:1 equirectangular is recommended, not required.
-            'panorama' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,webp', 'max:15360'],
+            // jpg/webp, 25 MB. 2:1 equirectangular is recommended, not required.
+            'panorama' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,webp', 'max:'.PanoramaCompressor::MAX_UPLOAD_KB],
             'remove_panorama' => ['sometimes', 'boolean'],
             'bedType' => ['nullable', 'string', 'max:255'],
             'roomSize' => ['nullable', 'string', 'max:255'],

@@ -12,10 +12,13 @@ use Illuminate\Validation\ValidationException;
 /**
  * File + row handling for a room type's 360° photos. Files live on the
  * public disk under `uploads/rooms/{id}/`, the same place the single
- * panorama has always been stored.
+ * panorama has always been stored. Each file is shrunk by
+ * PanoramaCompressor on the way in (the original is kept if that fails).
  */
 class RoomPanoramaStore
 {
+    public function __construct(private readonly PanoramaCompressor $compressor) {}
+
     /**
      * Store one uploaded file as the last panorama of the room type.
      */
@@ -69,15 +72,17 @@ class RoomPanoramaStore
 
     private function storeFile(UploadedFile $file, RoomType $roomType): string
     {
-        $ext = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg');
-        if ($ext === 'jpeg') {
-            $ext = 'jpg';
-        }
-        if (! in_array($ext, ['jpg', 'webp'], true)) {
-            $ext = 'jpg';
-        }
+        $dir = 'uploads/rooms/'.$roomType->id;
+        $name = Str::uuid()->toString();
 
-        $path = $file->storeAs('uploads/rooms/'.$roomType->id, Str::uuid()->toString().'.'.$ext, 'public');
+        $compressed = $this->compressor->compress($file);
+
+        if ($compressed !== null) {
+            $path = $dir.'/'.$name.'.'.$compressed['extension'];
+            $path = Storage::disk('public')->put($path, $compressed['contents']) ? $path : null;
+        } else {
+            $path = $file->storeAs($dir, $name.'.'.$this->originalExtension($file), 'public');
+        }
 
         if (! $path) {
             throw ValidationException::withMessages([
@@ -86,5 +91,15 @@ class RoomPanoramaStore
         }
 
         return $path;
+    }
+
+    private function originalExtension(UploadedFile $file): string
+    {
+        $ext = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg');
+        if ($ext === 'jpeg') {
+            $ext = 'jpg';
+        }
+
+        return in_array($ext, ['jpg', 'webp'], true) ? $ext : 'jpg';
     }
 }

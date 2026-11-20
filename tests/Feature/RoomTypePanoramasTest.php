@@ -10,10 +10,12 @@ use App\Models\Location;
 use App\Models\Package;
 use App\Models\RoomType;
 use App\Models\RoomTypePanorama;
+use App\Services\PanoramaCompressor;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use Tests\Unit\PanoramaCompressorTest;
 
 class RoomTypePanoramasTest extends TestCase
 {
@@ -176,7 +178,7 @@ class RoomTypePanoramasTest extends TestCase
         ], self::JSON)->assertStatus(422);
 
         $this->post("/admin/room-types/{$room->id}/panoramas", [
-            'panoramas' => [UploadedFile::fake()->image('big.jpg', 20, 10)->size(15361)],
+            'panoramas' => [UploadedFile::fake()->image('big.jpg', 20, 10)->size(25601)],
         ], self::JSON)->assertStatus(422);
 
         $this->assertSame(1, RoomTypePanorama::count());
@@ -346,5 +348,44 @@ class RoomTypePanoramasTest extends TestCase
 
         // The old column is kept.
         $this->assertSame('uploads/rooms/1/legacy.jpg', $with->fresh()->panorama_path);
+    }
+
+    public function test_big_upload_is_compressed_to_webp_within_8192_px(): void
+    {
+        $room = $this->room();
+        $this->actingAs($this->dev(), 'developer');
+
+        $path = PanoramaCompressorTest::noisyJpeg(10000, 5000);
+        $original = filesize($path);
+        $file = new UploadedFile($path, 'huge.jpg', 'image/jpeg', null, true);
+
+        $this->post("/admin/room-types/{$room->id}/panoramas", ['panoramas' => [$file]], self::JSON)
+            ->assertCreated()
+            ->assertJsonCount(1, 'panoramas');
+
+        $stored = RoomTypePanorama::firstOrFail()->path;
+        $this->assertStringEndsWith('.webp', $stored);
+        Storage::disk('public')->assertExists($stored);
+
+        $size = getimagesizefromstring(Storage::disk('public')->get($stored));
+        $this->assertLessThanOrEqual(8192, $size[0]);
+        $this->assertSame(IMAGETYPE_WEBP, $size[2]);
+        $this->assertLessThan($original, Storage::disk('public')->size($stored));
+
+        @unlink($path);
+    }
+
+    public function test_limit_is_25_mb_per_photo(): void
+    {
+        $room = $this->room();
+        $this->actingAs($this->dev(), 'developer');
+
+        $this->post("/admin/room-types/{$room->id}/panoramas", [
+            'panoramas' => [UploadedFile::fake()->image('big.jpg', 20, 10)->size(PanoramaCompressor::MAX_UPLOAD_KB + 1)],
+        ], self::JSON)->assertStatus(422);
+
+        $this->post("/admin/room-types/{$room->id}/panoramas", [
+            'panoramas' => [UploadedFile::fake()->image('fits.jpg', 20, 10)->size(PanoramaCompressor::MAX_UPLOAD_KB)],
+        ], self::JSON)->assertCreated();
     }
 }

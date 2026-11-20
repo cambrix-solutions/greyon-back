@@ -52,6 +52,7 @@ class RoleActionsTest extends TestCase
             '2026_09_30_000300_add_nearby_landmarks_to_hotels_table',
             '2026_09_15_000003_create_room_types_table',
             '2026_11_04_000100_add_panorama_path_to_room_types_table',
+            '2026_11_20_000300_create_room_type_panoramas_table',
             '2026_09_15_000004_create_rate_plans_table',
             '2026_09_19_000001_create_ops_and_cms_tables',
             '2026_11_20_000500_allow_more_booking_sources',
@@ -65,7 +66,7 @@ class RoleActionsTest extends TestCase
         Role::create(['name' => 'manager', 'is_global' => false, 'scope' => 'location']);
         Role::create(['name' => 'hotel_admin', 'is_global' => false, 'scope' => 'hotel']);
 
-        foreach (['users', 'roles', 'bookings', 'guests', 'reports'] as $i => $key) {
+        foreach (['users', 'roles', 'bookings', 'guests', 'reports', 'rooms'] as $i => $key) {
             Feature::create(['key' => $key, 'label' => ucfirst($key), 'category' => 'admin', 'sort_order' => $i]);
         }
 
@@ -188,6 +189,27 @@ class RoleActionsTest extends TestCase
             ->getJson('/admin/roles/options', self::JSON)
             ->assertOk()
             ->assertJsonPath('features.1.actions', ['view']);
+    }
+
+    public function test_360_photo_routes_follow_the_rooms_actions(): void
+    {
+        $this->actingAs($this->orgAdmin(), 'admin');
+        $roleId = $this->postJson('/admin/roles', [
+            'name' => 'Room editor',
+            'features' => [['key' => 'rooms', 'actions' => ['view', 'edit']]],
+        ], self::JSON)->assertCreated()->json('role.id');
+
+        $room = RoomType::create(['hotel_id' => $this->hotel->id, 'name' => 'Deluxe', 'slug' => 'deluxe', 'status' => 'published']);
+        $photo = $room->panoramas()->create(['path' => 'https://cdn.example.com/360.jpg', 'sort_order' => 0]);
+        $base = "/admin/room-types/{$room->id}/panoramas";
+        $person = $this->personWith($roleId);
+
+        // view: list. edit: publish toggle and reorder. create: upload. delete: remove.
+        $this->actingAs($person, 'admin')->getJson($base, self::JSON)->assertOk();
+        $this->actingAs($person, 'admin')->patchJson("{$base}/{$photo->id}", ['isPublished' => false], self::JSON)->assertOk();
+        $this->actingAs($person, 'admin')->patchJson("{$base}/reorder", ['ids' => [$photo->id]], self::JSON)->assertOk();
+        $this->actingAs($person, 'admin')->postJson($base, [], self::JSON)->assertForbidden();
+        $this->actingAs($person, 'admin')->deleteJson("{$base}/{$photo->id}", [], self::JSON)->assertForbidden();
     }
 
     public function test_guests_csv_export(): void

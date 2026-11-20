@@ -73,7 +73,11 @@ class CatalogController extends Controller
                     'panorama_path',
                 ])
                 ->selectRaw($this->boundedJsonImagesSql('images'))
-                ->with('hotel:id,name,slug')
+                ->with([
+                    'hotel:id,name,slug',
+                    // Guests only see published 360° photos, in the admin's order.
+                    'panoramas' => fn ($query) => $query->where('is_published', true),
+                ])
                 ->where('status', 'published')
                 ->whereIn('hotel_id', $hotelIds)
                 ->orderBy('name')

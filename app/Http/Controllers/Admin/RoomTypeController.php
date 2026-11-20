@@ -8,13 +8,10 @@ use App\Http\Resources\RoomTypeResource;
 use App\Models\Hotel;
 use App\Models\RoomType;
 use App\Services\AccessService;
+use App\Services\RoomPanoramaStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
@@ -49,11 +46,14 @@ class RoomTypeController extends Controller
 {
     use AuthorizesAdminPanel;
 
-    public function __construct(private readonly AccessService $access) {}
+    public function __construct(
+        private readonly AccessService $access,
+        private readonly RoomPanoramaStore $panoramas,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
-        $roomTypes = RoomType::with('hotel')
+        $roomTypes = RoomType::with(['hotel', 'panoramas'])
             ->get()
             ->filter(fn (RoomType $roomType) => $this->adminCanAccessHotel($request, $roomType->hotel_id))
             ->values();
@@ -65,7 +65,7 @@ class RoomTypeController extends Controller
     {
         $this->authorizeScope($request, $roomType);
 
-        return response()->json(['roomType' => new RoomTypeResource($roomType->load('hotel'))]);
+        return response()->json(['roomType' => new RoomTypeResource($roomType->load(['hotel', 'panoramas']))]);
     }
 
     public function store(Request $request): JsonResponse
@@ -77,7 +77,7 @@ class RoomTypeController extends Controller
         // (e.g. status, maxAdults) are reflected in the response —
         // Eloquent's create() doesn't otherwise pick those up on the
         // in-memory instance.
-        return response()->json(['roomType' => new RoomTypeResource($roomType->refresh()->load('hotel'))], 201);
+        return response()->json(['roomType' => new RoomTypeResource($roomType->refresh()->load(['hotel', 'panoramas']))], 201);
     }
 
     public function update(Request $request, RoomType $roomType): JsonResponse
@@ -87,14 +87,14 @@ class RoomTypeController extends Controller
         $roomType->update($this->validated($request, $roomType));
         $this->applyPanorama($request, $roomType);
 
-        return response()->json(['roomType' => new RoomTypeResource($roomType->refresh()->load('hotel'))]);
+        return response()->json(['roomType' => new RoomTypeResource($roomType->refresh()->load(['hotel', 'panoramas']))]);
     }
 
     public function destroy(Request $request, RoomType $roomType): JsonResponse
     {
         $this->assertGlobalSeat($request);
 
-        $this->deletePanoramaFile($roomType->panorama_path);
+        $this->panoramas->clear($roomType);
         $roomType->delete();
 
         return response()->json(['message' => 'Room type deleted.']);
@@ -158,59 +158,24 @@ class RoomTypeController extends Controller
     }
 
     /**
-     * Store a new panorama, or clear the current one. A file wins over
-     * `remove_panorama` when both are sent.
+     * Legacy single-photo field. A file replaces every existing 360° photo
+     * with this one; `remove_panorama` clears them all. A file wins over
+     * `remove_panorama` when both are sent. The admin UI now manages photos
+     * one by one through RoomTypePanoramaController instead.
      */
     private function applyPanorama(Request $request, RoomType $roomType): void
     {
         if ($request->hasFile('panorama')) {
-            $this->deletePanoramaFile($roomType->panorama_path);
-            $roomType->update([
-                'panorama_path' => $this->storePanorama($request->file('panorama'), $roomType),
-            ]);
+            $this->panoramas->clear($roomType);
+            $this->panoramas->add($roomType, $request->file('panorama'));
+            $roomType->syncLegacyPanorama();
 
             return;
         }
 
         if ($request->boolean('remove_panorama')) {
-            $this->deletePanoramaFile($roomType->panorama_path);
-            $roomType->update(['panorama_path' => null]);
+            $this->panoramas->clear($roomType);
         }
-    }
-
-    private function storePanorama(UploadedFile $file, RoomType $roomType): string
-    {
-        $ext = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg');
-        if ($ext === 'jpeg') {
-            $ext = 'jpg';
-        }
-        if (! in_array($ext, ['jpg', 'webp'], true)) {
-            $ext = 'jpg';
-        }
-
-        $path = $file->storeAs('uploads/rooms/'.$roomType->id, Str::uuid()->toString().'.'.$ext, 'public');
-
-        if (! $path) {
-            throw ValidationException::withMessages([
-                'panorama' => 'Upload failed. Please try again.',
-            ]);
-        }
-
-        return $path;
-    }
-
-    private function deletePanoramaFile(?string $path): void
-    {
-        if (! is_string($path) || $path === '' || str_contains($path, '..')) {
-            return;
-        }
-
-        $path = ltrim($path, '/');
-        if (! str_starts_with($path, 'uploads/rooms/')) {
-            return;
-        }
-
-        Storage::disk('public')->delete($path);
     }
 
     /**

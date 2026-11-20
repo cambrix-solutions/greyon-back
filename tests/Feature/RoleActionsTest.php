@@ -36,7 +36,7 @@ class RoleActionsTest extends TestCase
             '2026_09_14_000005_create_packages_table',
             '2026_09_14_000006_create_package_role_table',
             '2026_09_14_000007_create_package_feature_table',
-            '2026_11_20_000100_add_actions_to_package_feature_table',
+            '2026_11_20_000400_add_actions_to_package_feature_table',
             '2026_09_14_000008_create_admin_package_table',
             '2026_09_16_000001_create_package_limits_table',
             '2026_09_16_000003_create_permissions_table',
@@ -54,9 +54,8 @@ class RoleActionsTest extends TestCase
             '2026_11_04_000100_add_panorama_path_to_room_types_table',
             '2026_09_15_000004_create_rate_plans_table',
             '2026_09_19_000001_create_ops_and_cms_tables',
-            '2026_11_20_000200_allow_more_booking_sources',
+            '2026_11_20_000500_allow_more_booking_sources',
             '2026_09_20_000001_create_staff_notifications_table',
-            '2026_11_16_000300_create_booking_events_table',
             '2026_11_17_000100_create_guest_notes_table',
         ] as $file) {
             (require database_path("migrations/$file.php"))->up();
@@ -125,7 +124,6 @@ class RoleActionsTest extends TestCase
 
         $id = $this->postJson('/admin/roles', [
             'name' => 'Night auditor',
-            'scope' => 'hotel',
             'features' => [['key' => 'bookings', 'actions' => ['view']], ['key' => 'guests', 'actions' => ['view', 'edit']]],
         ], self::JSON)
             ->assertCreated()
@@ -154,8 +152,8 @@ class RoleActionsTest extends TestCase
     {
         $this->actingAs($this->orgAdmin(), 'admin');
 
-        $viewer = $this->postJson('/admin/roles', ['name' => 'Viewer', 'scope' => 'hotel', 'features' => [['key' => 'bookings', 'actions' => ['view']]]], self::JSON)->json('role.id');
-        $editor = $this->postJson('/admin/roles', ['name' => 'Editor', 'scope' => 'hotel', 'features' => [['key' => 'bookings', 'actions' => ['edit']]]], self::JSON)
+        $viewer = $this->postJson('/admin/roles', ['name' => 'Viewer', 'features' => [['key' => 'bookings', 'actions' => ['view']]]], self::JSON)->json('role.id');
+        $editor = $this->postJson('/admin/roles', ['name' => 'Editor', 'features' => [['key' => 'bookings', 'actions' => ['edit']]]], self::JSON)
             ->assertJsonPath('role.featureActions.bookings', ['view', 'edit'])
             ->json('role.id');
 
@@ -175,14 +173,14 @@ class RoleActionsTest extends TestCase
     {
         $this->actingAs($this->orgAdmin(), 'admin');
         $limitedId = $this->postJson('/admin/roles', [
-            'name' => 'Desk lead', 'scope' => 'hotel',
+            'name' => 'Desk lead',
             'features' => [['key' => 'roles', 'actions' => ['view', 'create']], ['key' => 'bookings', 'actions' => ['view']]],
         ], self::JSON)->json('role.id');
 
         $lead = $this->personWith($limitedId);
 
         $this->actingAs($lead, 'admin')
-            ->postJson('/admin/roles', ['name' => 'Sneaky', 'scope' => 'hotel', 'features' => [['key' => 'bookings', 'actions' => ['delete']]]], self::JSON)
+            ->postJson('/admin/roles', ['name' => 'Sneaky', 'features' => [['key' => 'bookings', 'actions' => ['delete']]]], self::JSON)
             ->assertStatus(422)
             ->assertJsonValidationErrors('features');
 

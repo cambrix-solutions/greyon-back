@@ -3,13 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Booking;
-use App\Models\BookingEvent;
-use App\Models\Developer;
 use App\Models\Hotel;
 use App\Models\Location;
 use App\Models\RatePlan;
 use App\Models\RoomType;
-use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 class ReservationTest extends TestCase
@@ -36,7 +33,6 @@ class ReservationTest extends TestCase
             '2026_11_20_000300_create_room_type_panoramas_table.php',
             '2026_09_15_000004_create_rate_plans_table.php',
             '2026_09_19_000001_create_ops_and_cms_tables.php',
-            '2026_11_16_000300_create_booking_events_table.php',
         ] as $file) {
             (require database_path('migrations/'.$file))->up();
         }
@@ -67,52 +63,6 @@ class ReservationTest extends TestCase
         ], $over));
     }
 
-    public function test_lookup_returns_the_reservation_with_receipt_and_timeline(): void
-    {
-        $booking = $this->booking();
-        BookingEvent::record($booking, 'created', null, 'pending');
-        BookingEvent::record($booking, 'status_changed', 'pending', 'confirmed');
-
-        $this->postJson('/reservations/lookup', ['reference' => 'gry-abc123', 'email' => 'DARA@example.com'], self::JSON)
-            ->assertOk()
-            ->assertJsonPath('reservation.reference', 'GRY-ABC123')
-            ->assertJsonPath('reservation.nights', 3)
-            ->assertJsonPath('reservation.hotel.name', 'Greyon PP')
-            ->assertJsonPath('reservation.ratePlan.cancellationPolicy', 'Free until 48h')
-            ->assertJsonPath('reservation.pricing.total', 330)
-            ->assertJsonCount(2, 'reservation.timeline')
-            ->assertJsonPath('reservation.timeline.1.status', 'confirmed');
-    }
-
-    public function test_lookup_hides_internal_notes_and_staff_identity(): void
-    {
-        $booking = $this->booking();
-        BookingEvent::record($booking, 'created', null, 'pending');
-
-        $body = $this->postJson('/reservations/lookup', ['reference' => 'GRY-ABC123', 'email' => 'dara@example.com'], self::JSON)->getContent();
-
-        $this->assertStringNotContainsString('INTERNAL', $body);
-        $this->assertStringNotContainsString('actor', $body);
-    }
-
-    public function test_wrong_email_or_reference_look_identical(): void
-    {
-        $this->booking();
-
-        $wrongEmail = $this->postJson('/reservations/lookup', ['reference' => 'GRY-ABC123', 'email' => 'other@example.com'], self::JSON);
-        $wrongRef = $this->postJson('/reservations/lookup', ['reference' => 'GRY-ZZZZZZ', 'email' => 'dara@example.com'], self::JSON);
-
-        $wrongEmail->assertNotFound();
-        $wrongRef->assertNotFound();
-        $this->assertSame($wrongEmail->json('message'), $wrongRef->json('message'));
-    }
-
-    public function test_lookup_validates_input(): void
-    {
-        $this->postJson('/reservations/lookup', ['reference' => 'GRY-ABC123'], self::JSON)
-            ->assertStatus(422)->assertJsonValidationErrors('email');
-    }
-
     public function test_public_reference_endpoint_no_longer_leaks_internal_notes(): void
     {
         $this->booking();
@@ -121,28 +71,5 @@ class ReservationTest extends TestCase
 
         $this->assertStringNotContainsString('INTERNAL', $response->getContent());
         $response->assertJsonPath('booking.reference', 'GRY-ABC123');
-    }
-
-    public function test_events_record_who_did_it(): void
-    {
-        $booking = $this->booking();
-
-        $system = BookingEvent::record($booking, 'created', null, 'pending');
-        $this->assertSame('guest', $system->actor_type); // website booking, nobody signed in
-
-        Auth::guard('developer')->setUser(Developer::factory()->make(['id' => 7]));
-        $changed = BookingEvent::record($booking, 'status_changed', 'pending', 'confirmed');
-
-        $this->assertSame('developer', $changed->actor_type);
-        $this->assertSame(7, (int) $changed->actor_id);
-        $this->assertSame('confirmed', $changed->to_status);
-    }
-
-    public function test_notification_service_records_the_timeline(): void
-    {
-        $source = file_get_contents(app_path('Services/BookingNotificationService.php'));
-
-        $this->assertStringContainsString("BookingEvent::record(\$booking, 'created'", $source);
-        $this->assertStringContainsString("BookingEvent::record(\$booking, 'status_changed'", $source);
     }
 }

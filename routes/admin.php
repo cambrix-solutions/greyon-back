@@ -10,13 +10,10 @@ use App\Http\Controllers\Admin\Auth\NewPasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Admin\Auth\VerifyEmailController;
-use App\Http\Controllers\Admin\ActivityController;
-use App\Http\Controllers\Admin\AdminOfferController;
 use App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\CustomRoleController;
 use App\Http\Controllers\Admin\EnquiryController;
-use App\Http\Controllers\Admin\CalendarController;
 use App\Http\Controllers\Admin\GuestController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\HotelController;
@@ -181,30 +178,11 @@ Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix'
         Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
     });
 
-    // Activity log: who changed what, limited to the seat's own hotels / destinations.
-    Route::middleware('permission:activity')->group(function () {
-        Route::get('/activity', [ActivityController::class, 'index'])->name('activity.index');
-    });
-
-    // Offers / special rates (hotel, destination or everywhere; scoped seats only touch their own).
-    Route::middleware('permission:offers')->group(function () {
-        Route::get('/offers', [AdminOfferController::class, 'index'])->name('offers.index');
-        Route::post('/offers', [AdminOfferController::class, 'store'])->name('offers.store');
-        Route::get('/offers/{offer}', [AdminOfferController::class, 'show'])->whereNumber('offer')->name('offers.show');
-        Route::patch('/offers/{offer}', [AdminOfferController::class, 'update'])->whereNumber('offer')->name('offers.update');
-        Route::delete('/offers/{offer}', [AdminOfferController::class, 'destroy'])->whereNumber('offer')->name('offers.destroy');
-    });
-
-    // Calendar: month grid + bulk edit of units, stop-sell, prices and stay rules.
-    Route::middleware('permission:calendar')->group(function () {
-        Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
-        Route::put('/calendar/bulk', [CalendarController::class, 'bulk'])->name('calendar.bulk');
-    });
-
     // Guests (people on reservations, matched by e-mail) and Reports - both scoped to the seat's hotels.
     Route::middleware('permission:guests')->group(function () {
         Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
         Route::get('/guests/profile', [GuestController::class, 'show'])->name('guests.show');
+        Route::get('/guests/export', [GuestController::class, 'export'])->name('guests.export');
         Route::put('/guests/note', [GuestController::class, 'note'])->name('guests.note');
     });
 

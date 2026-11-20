@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\AccessService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -43,6 +44,11 @@ class AdminResource extends JsonResource
                     'featureKeys' => $package->relationLoaded('features')
                         ? $package->features->pluck('key')->values()
                         : [],
+                    'featureActions' => $package->relationLoaded('features')
+                        ? (object) $package->features
+                            ->mapWithKeys(fn ($f) => [$f->key => AccessService::normaliseActions($f->pivot?->actions)])
+                            ->all()
+                        : (object) [],
                     'permissionKeys' => $package->relationLoaded('permissions')
                         ? $package->permissions->pluck('key')->values()
                         : [],

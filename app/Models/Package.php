@@ -43,7 +43,7 @@ class Package extends Model
      */
     public function features(): BelongsToMany
     {
-        return $this->belongsToMany(Feature::class, 'package_feature');
+        return $this->belongsToMany(Feature::class, 'package_feature')->withPivot('actions');
     }
 
     /**

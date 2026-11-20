@@ -110,7 +110,6 @@ class MediaItemController extends Controller
             'hotelId' => ['nullable', 'integer', Rule::exists(Hotel::class, 'id')],
             'src' => [$mediaItem ? 'sometimes' : 'required', 'string', 'max:2048'],
             'alt' => ['sometimes', 'string', 'max:255'],
-            'inGallery' => ['sometimes', 'boolean'],
         ]);
 
         $mapped = $this->mapCamel($data);
@@ -145,7 +144,6 @@ class MediaItemController extends Controller
         $map = [
             'locationId' => 'location_id',
             'hotelId' => 'hotel_id',
-            'inGallery' => 'in_gallery',
         ];
 
         foreach ($map as $camel => $snake) {

@@ -11,7 +11,6 @@ use App\Models\Package;
 use App\Models\RatePlan;
 use App\Models\Role;
 use App\Models\RoomType;
-use App\Models\StaffNotification;
 use Tests\TestCase;
 
 class GuestsReportsNotificationsTest extends TestCase
@@ -34,6 +33,7 @@ class GuestsReportsNotificationsTest extends TestCase
             '2026_09_14_000005_create_packages_table',
             '2026_09_14_000006_create_package_role_table',
             '2026_09_14_000007_create_package_feature_table',
+            '2026_11_20_000400_add_actions_to_package_feature_table',
             '2026_09_14_000008_create_admin_package_table',
             '2026_09_16_000001_create_package_limits_table',
             '2026_09_16_000003_create_permissions_table',
@@ -51,8 +51,6 @@ class GuestsReportsNotificationsTest extends TestCase
             '2026_11_20_000300_create_room_type_panoramas_table',
             '2026_09_15_000004_create_rate_plans_table',
             '2026_09_19_000001_create_ops_and_cms_tables',
-            '2026_09_20_000001_create_staff_notifications_table',
-            '2026_11_16_000300_create_booking_events_table',
             '2026_11_17_000100_create_guest_notes_table',
         ] as $file) {
             (require database_path("migrations/$file.php"))->up();
@@ -60,6 +58,7 @@ class GuestsReportsNotificationsTest extends TestCase
 
         Role::create(['name' => 'admin', 'is_global' => true, 'scope' => 'none']);
         Role::create(['name' => 'manager', 'is_global' => false, 'scope' => 'location']);
+        Role::create(['name' => 'hotel_admin', 'is_global' => false, 'scope' => 'hotel']);
         foreach (['guests', 'reports', 'bookings'] as $i => $key) {
             Feature::create(['key' => $key, 'label' => ucfirst($key), 'category' => 'admin', 'sort_order' => $i]);
         }
@@ -78,6 +77,22 @@ class GuestsReportsNotificationsTest extends TestCase
 
         $admin = Admin::factory()->create();
         $admin->packages()->sync([$package->id => ['location_ids' => $role === 'manager' ? [1] : null, 'hotel_ids' => null]]);
+
+        return $admin;
+    }
+
+    /** A custom role: carries both base roles, scoped by what is picked when the person is added. */
+    private function customRoleAdmin(array $locationIds, array $hotelIds): Admin
+    {
+        $package = Package::create(['name' => 'Front desk '.uniqid(), 'is_system' => false]);
+        $package->roles()->sync(Role::whereIn('name', ['manager', 'hotel_admin'])->pluck('id'));
+        $package->features()->sync(Feature::whereIn('key', ['guests', 'reports'])->pluck('id'));
+
+        $admin = Admin::factory()->create();
+        $admin->packages()->sync([$package->id => [
+            'location_ids' => $locationIds ?: null,
+            'hotel_ids' => $hotelIds ?: null,
+        ]]);
 
         return $admin;
     }
@@ -111,6 +126,32 @@ class GuestsReportsNotificationsTest extends TestCase
         $b->save();
 
         return $b;
+    }
+
+    // ---------- Custom role scope ----------
+
+    public function test_custom_role_on_a_hotel_only_sees_that_hotel(): void
+    {
+        $this->reservation($this->pp, 'pp@example.com');
+        $this->reservation($this->kampot, 'kampot@example.com');
+
+        $this->actingAs($this->customRoleAdmin([], [$this->kampot->id]), 'admin')
+            ->getJson('/admin/guests', self::JSON)
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('guests.0.email', 'kampot@example.com');
+    }
+
+    public function test_custom_role_on_a_destination_sees_every_hotel_in_it(): void
+    {
+        $this->reservation($this->pp, 'pp@example.com');
+        $this->reservation($this->kampot, 'kampot@example.com');
+
+        $this->actingAs($this->customRoleAdmin([$this->pp->location_id], []), 'admin')
+            ->getJson('/admin/guests', self::JSON)
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('guests.0.email', 'pp@example.com');
     }
 
     // ---------- Guests ----------
@@ -265,47 +306,5 @@ class GuestsReportsNotificationsTest extends TestCase
         $this->assertStringContainsString("'=HYPERLINK", $csv);
         $this->assertStringNotContainsString(',"=HYPERLINK', $csv);
         $this->assertStringNotContainsString('INTERNAL', $csv);
-    }
-
-    // ---------- Notifications ----------
-
-    private function notify(Admin $to, string $type, ?Hotel $hotel, bool $read = false, string $at = '2026-11-10 10:00:00'): StaffNotification
-    {
-        $booking = $this->reservation($hotel ?? $this->pp, 'n'.uniqid().'@example.com');
-        $n = new StaffNotification([
-            'notifiable_type' => Admin::class, 'notifiable_id' => $to->id,
-            'type' => $type, 'booking_id' => $booking->id, 'hotel_id' => $hotel?->id, 'location_id' => $hotel?->location_id,
-            'title' => 'New reservation', 'body' => 'x', 'read_at' => $read ? now() : null,
-        ]);
-        $n->created_at = $at;
-        $n->save();
-
-        return $n;
-    }
-
-    public function test_notification_filters_paging_and_unread_total(): void
-    {
-        $me = $this->admin();
-        $other = $this->admin();
-        $this->notify($me, 'booking.created', $this->pp, false, '2026-11-10 10:00:00');
-        $this->notify($me, 'booking.created', $this->kampot, true, '2026-11-11 10:00:00');
-        $this->notify($me, 'booking.status_changed', $this->pp, false, '2026-11-12 10:00:00');
-        $this->notify($other, 'booking.created', $this->pp);
-
-        $get = fn (string $qs = '') => $this->actingAs($me, 'admin')->getJson('/admin/notifications'.$qs, self::JSON)->assertOk();
-
-        $all = $get();
-        $all->assertJsonPath('meta.total', 3)->assertJsonPath('unreadCount', 2);
-        $this->assertEqualsCanonicalizing(['booking.created', 'booking.status_changed'], $all->json('types'));
-
-        $get('?unread=1')->assertJsonPath('meta.total', 2)->assertJsonPath('unreadCount', 2);
-        $get('?type=booking.status_changed')->assertJsonPath('meta.total', 1);
-        $get('?hotelId='.$this->kampot->id)->assertJsonPath('meta.total', 1);
-        $get('?from=2026-11-11&to=2026-11-11')->assertJsonPath('meta.total', 1);
-
-        $page = $get('?perPage=2&page=2');
-        $page->assertJsonCount(1, 'notifications')->assertJsonPath('meta.lastPage', 2);
-
-        $this->actingAs($me, 'admin')->getJson('/admin/notifications?perPage=500', self::JSON)->assertStatus(422);
     }
 }

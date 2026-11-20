@@ -55,6 +55,7 @@ class ActivityLogTest extends TestCase
             '2026_09_30_000300_add_nearby_landmarks_to_hotels_table',
             '2026_09_15_000003_create_room_types_table',
             '2026_11_04_000100_add_panorama_path_to_room_types_table',
+            '2026_11_20_000300_create_room_type_panoramas_table',
             '2026_09_15_000004_create_rate_plans_table',
             '2026_10_05_000100_create_services_table',
             '2026_11_18_000100_create_activity_logs_table',

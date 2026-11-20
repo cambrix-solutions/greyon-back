@@ -30,6 +30,9 @@ class RoomTypeResource extends JsonResource
             'description' => $this->description,
             'images' => $this->images ?? [],
             'panoramaUrl' => $this->panoramaUrl(),
+            // Ordered 360° photos. Public catalog loads only the published ones;
+            // admin endpoints load all of them. Absent when not loaded.
+            'panoramas' => RoomTypePanoramaResource::collection($this->whenLoaded('panoramas')),
             'bedType' => $this->bed_type,
             'roomSize' => $this->room_size,
             'maxAdults' => $this->max_adults,

@@ -35,6 +35,7 @@ class RoomPanoramaTest extends TestCase
             '2026_09_30_000300_add_nearby_landmarks_to_hotels_table.php',
             '2026_09_15_000003_create_room_types_table.php',
             '2026_11_04_000100_add_panorama_path_to_room_types_table.php',
+            '2026_11_20_000300_create_room_type_panoramas_table.php',
             '2026_09_15_000004_create_rate_plans_table.php',
             '2026_09_19_000001_create_ops_and_cms_tables.php',
             '2026_09_27_000200_add_location_id_to_news_table.php',

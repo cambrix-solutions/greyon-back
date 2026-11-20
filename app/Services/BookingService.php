@@ -70,6 +70,7 @@ class BookingService
 
         $hotelIds = $hotels->pluck('id');
         $roomTypes = RoomType::query()
+            ->with(['panoramas' => fn ($query) => $query->where('is_published', true)])
             ->where('status', 'published')
             ->whereIn('hotel_id', $hotelIds)
             ->get()

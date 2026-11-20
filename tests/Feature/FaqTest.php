@@ -59,7 +59,7 @@ class FaqTest extends TestCase
         $this->assertSame('draft', $page->status);
     }
 
-    public function test_admin_writes_faq_blocks(): void
+    public function test_admin_writes_faq_blocks_and_public_reads_them(): void
     {
         $admin = $this->admin();
         $page = Page::where('slug', 'faq')->first();
@@ -75,7 +75,7 @@ class FaqTest extends TestCase
             ],
         ], self::JSON)->assertOk();
 
-        $blocks = $this->getJson("/admin/pages/{$page->id}", self::JSON)->assertOk()->json('page.blocks');
+        $blocks = $this->getJson('/pages/faq', self::JSON)->assertOk()->json('page.blocks');
         $this->assertSame('faq', $blocks[1]['type']);
         $this->assertCount(2, $blocks[1]['items']);
         $this->assertSame(['question', 'answer'], array_keys($blocks[1]['items'][0]));

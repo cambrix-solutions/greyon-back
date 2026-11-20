@@ -70,6 +70,16 @@ class PageTest extends TestCase
         ], $over);
     }
 
+    public function test_public_shows_only_published_pages(): void
+    {
+        Page::create(['slug' => 'terms', 'title' => 'Terms', 'blocks' => [['type' => 'paragraph', 'text' => 'T']], 'status' => 'published', 'is_system' => true]);
+        Page::create(['slug' => 'privacy', 'title' => 'Privacy', 'blocks' => [], 'status' => 'draft', 'is_system' => true]);
+
+        $this->getJson('/pages/terms', self::JSON)->assertOk()->assertJsonPath('page.title', 'Terms');
+        $this->getJson('/pages/privacy', self::JSON)->assertNotFound();
+        $this->getJson('/pages', self::JSON)->assertOk()->assertJsonCount(1, 'pages')->assertJsonPath('pages.0.slug', 'terms');
+    }
+
     public function test_admin_creates_a_page_with_blocks(): void
     {
         $this->actingAs($this->adminWith(), 'admin')

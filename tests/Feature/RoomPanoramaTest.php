@@ -132,7 +132,7 @@ class RoomPanoramaTest extends TestCase
 
         $this->assertIsString($path);
         $this->assertStringStartsWith("uploads/rooms/{$id}/", $path);
-        $this->assertStringEndsWith('.jpg', $path);
+        $this->assertMatchesRegularExpression('/\.(jpg|webp)$/', $path);
         Storage::disk('public')->assertExists($path);
 
         $url = $this->publicUrl($path);
@@ -195,7 +195,7 @@ class RoomPanoramaTest extends TestCase
         ], self::JSON)->assertOk();
 
         $path = RoomType::findOrFail($id)->panorama_path;
-        $this->assertStringEndsWith('.jpg', $path);
+        $this->assertMatchesRegularExpression('/\.(jpg|webp)$/', $path);
         $withFile->assertJsonPath('roomType.panoramaUrl', $this->publicUrl($path));
 
         $this->patchJson("/admin/room-types/{$id}", ['description' => 'Quiet twin.'])
@@ -289,7 +289,7 @@ class RoomPanoramaTest extends TestCase
         $this->assertNull(RoomType::find($id));
     }
 
-    public function test_rejects_png_non_image_and_files_over_15mb(): void
+    public function test_rejects_png_non_image_and_files_over_25mb(): void
     {
         $hotel = $this->hotel();
         $this->actingAs($this->dev(), 'developer');
@@ -312,7 +312,7 @@ class RoomPanoramaTest extends TestCase
             'hotelId' => $hotel->id,
             'name' => 'Bad',
             'slug' => 'bad',
-            'panorama' => UploadedFile::fake()->image('big.jpg', 20, 10)->size(15361),
+            'panorama' => UploadedFile::fake()->image('big.jpg', 20, 10)->size(25601),
         ], self::JSON)->assertStatus(422);
 
         $this->assertSame(0, RoomType::count());

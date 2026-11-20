@@ -8,6 +8,7 @@ use App\Http\Resources\RoomTypePanoramaResource;
 use App\Models\RoomType;
 use App\Models\RoomTypePanorama;
 use App\Services\AccessService;
+use App\Services\PanoramaCompressor;
 use App\Services\RoomPanoramaStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,9 +49,9 @@ class RoomTypePanoramaController extends Controller
         $this->authorizeScope($request, $roomType);
 
         $request->validate([
-            'panorama' => ['sometimes', 'file', 'image', 'mimes:jpg,jpeg,webp', 'max:15360'],
+            'panorama' => ['sometimes', 'file', 'image', 'mimes:jpg,jpeg,webp', 'max:'.PanoramaCompressor::MAX_UPLOAD_KB],
             'panoramas' => ['sometimes', 'array', 'max:20'],
-            'panoramas.*' => ['file', 'image', 'mimes:jpg,jpeg,webp', 'max:15360'],
+            'panoramas.*' => ['file', 'image', 'mimes:jpg,jpeg,webp', 'max:'.PanoramaCompressor::MAX_UPLOAD_KB],
             'isPublished' => ['sometimes', 'boolean'],
         ]);
 

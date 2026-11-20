@@ -2,22 +2,18 @@
 
 use App\Models\Page;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     /**
-     * Gallery: a media item shows on the public gallery unless staff switch
-     * `in_gallery` off. FAQ: a built-in page, created as a draft so the
-     * frontend keeps its own text until the client publishes.
+     * Adds the built-in FAQ page as a draft (staff fill it in from the Pages
+     * screen). The file name is kept so databases that already ran it stay
+     * consistent; on those, an unused `media_items.in_gallery` column may
+     * remain and is harmless.
      */
     public function up(): void
     {
-        Schema::table('media_items', function (Blueprint $table) {
-            $table->boolean('in_gallery')->default(true)->after('alt');
-        });
-
         if (Schema::hasTable('pages')) {
             Page::firstOrCreate(
                 ['slug' => 'faq'],
@@ -28,8 +24,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('media_items', function (Blueprint $table) {
-            $table->dropColumn('in_gallery');
-        });
+        Page::where('slug', 'faq')->delete();
     }
 };

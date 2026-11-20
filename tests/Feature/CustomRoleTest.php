@@ -26,7 +26,7 @@ class CustomRoleTest extends TestCase
             '2026_09_14_000005_create_packages_table',
             '2026_09_14_000006_create_package_role_table',
             '2026_09_14_000007_create_package_feature_table',
-            '2026_11_20_000100_add_actions_to_package_feature_table',
+            '2026_11_20_000400_add_actions_to_package_feature_table',
             '2026_09_14_000008_create_admin_package_table',
             '2026_09_16_000001_create_package_limits_table',
             '2026_09_16_000003_create_permissions_table',
@@ -63,7 +63,6 @@ class CustomRoleTest extends TestCase
         return array_merge([
             'name' => 'Front desk',
             'description' => 'Reception staff',
-            'scope' => 'hotel',
             'featureKeys' => ['bookings', 'rooms'],
         ], $over);
     }
@@ -81,7 +80,7 @@ class CustomRoleTest extends TestCase
         $package = Package::where('name', 'Front desk')->first();
         $this->assertFalse($package->is_system);
         $this->assertSame($admin->id, $package->created_by_admin_id);
-        $this->assertSame(['hotel_admin'], $package->roles()->pluck('name')->all());
+        $this->assertEqualsCanonicalizing(['manager', 'hotel_admin'], $package->roles()->pluck('name')->all());
         $this->assertEqualsCanonicalizing(['bookings', 'rooms'], $package->features()->pluck('key')->all());
     }
 
@@ -102,12 +101,13 @@ class CustomRoleTest extends TestCase
             ->assertStatus(422);
     }
 
-    public function test_scope_must_be_location_or_hotel(): void
+    public function test_a_role_has_no_scope_of_its_own(): void
     {
         $this->actingAs($this->orgAdmin(), 'admin')
             ->postJson('/admin/roles', $this->payload(['scope' => 'none']), self::JSON)
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('scope');
+            ->assertCreated();
+
+        $this->getJson('/admin/roles/options', self::JSON)->assertOk()->assertJsonMissingPath('scopes');
     }
 
     public function test_options_lists_only_features_the_admin_can_grant(): void
@@ -142,7 +142,7 @@ class CustomRoleTest extends TestCase
         $this->deleteJson("/admin/roles/{$systemId}", [], self::JSON)->assertNotFound();
     }
 
-    public function test_scope_cannot_change_once_assigned_and_assigned_roles_cannot_be_deleted(): void
+    public function test_assigned_roles_cannot_be_deleted(): void
     {
         $admin = $this->orgAdmin();
         $this->actingAs($admin, 'admin');
@@ -151,10 +151,6 @@ class CustomRoleTest extends TestCase
 
         $person = Admin::factory()->create();
         $person->packages()->sync([$id => ['location_ids' => null, 'hotel_ids' => [1]]]);
-
-        $this->patchJson("/admin/roles/{$id}", ['scope' => 'location'], self::JSON)
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('scope');
 
         $this->deleteJson("/admin/roles/{$id}", [], self::JSON)->assertStatus(400);
 

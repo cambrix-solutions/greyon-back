@@ -57,7 +57,7 @@ class BookingController extends Controller
     {
         $this->authorizeScope($request, $booking);
 
-        return response()->json(['booking' => new BookingResource($booking->load('events'))]);
+        return response()->json(['booking' => new BookingResource($booking)]);
     }
 
     public function store(Request $request): JsonResponse

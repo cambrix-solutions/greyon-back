@@ -53,6 +53,7 @@ class RoleActionsTest extends TestCase
             '2026_09_15_000003_create_room_types_table',
             '2026_11_04_000100_add_panorama_path_to_room_types_table',
             '2026_11_20_000300_create_room_type_panoramas_table',
+            '2026_11_20_000600_add_captions_and_hotspots_to_panoramas',
             '2026_09_15_000004_create_rate_plans_table',
             '2026_09_19_000001_create_ops_and_cms_tables',
             '2026_11_20_000500_allow_more_booking_sources',

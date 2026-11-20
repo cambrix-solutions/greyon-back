@@ -22,12 +22,13 @@ use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\MediaItemController;
 use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\Admin\PageController;
-use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\RateCalendarController;
 use App\Http\Controllers\Admin\RatePlanController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RoomTypeController;
 use App\Http\Controllers\Admin\RoomTypePanoramaController;
+use App\Http\Controllers\Admin\RoomTypePanoramaHotspotController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SiteSettingController;
 use App\Http\Controllers\Admin\TeamController;
@@ -146,6 +147,11 @@ Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix'
         Route::patch('/room-types/{roomType}/panoramas/reorder', [RoomTypePanoramaController::class, 'reorder'])->name('room-types.panoramas.reorder');
         Route::patch('/room-types/{roomType}/panoramas/{panorama}', [RoomTypePanoramaController::class, 'update'])->name('room-types.panoramas.update');
         Route::delete('/room-types/{roomType}/panoramas/{panorama}', [RoomTypePanoramaController::class, 'destroy'])->name('room-types.panoramas.destroy');
+
+        Route::get('/room-types/{roomType}/panoramas/{panorama}/hotspots', [RoomTypePanoramaHotspotController::class, 'index'])->name('room-types.panoramas.hotspots.index');
+        Route::post('/room-types/{roomType}/panoramas/{panorama}/hotspots', [RoomTypePanoramaHotspotController::class, 'store'])->name('room-types.panoramas.hotspots.store');
+        Route::patch('/room-types/{roomType}/panoramas/{panorama}/hotspots/{hotspot}', [RoomTypePanoramaHotspotController::class, 'update'])->name('room-types.panoramas.hotspots.update');
+        Route::delete('/room-types/{roomType}/panoramas/{panorama}/hotspots/{hotspot}', [RoomTypePanoramaHotspotController::class, 'destroy'])->name('room-types.panoramas.hotspots.destroy');
     });
 
     Route::middleware('permission:rates')->group(function () {

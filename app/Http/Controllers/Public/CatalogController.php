@@ -76,7 +76,10 @@ class CatalogController extends Controller
                 ->with([
                     'hotel:id,name,slug',
                     // Guests only see published 360° photos, in the admin's order.
-                    'panoramas' => fn ($query) => $query->where('is_published', true),
+                    'panoramas' => fn ($query) => $query
+                        ->where('is_published', true)
+                        ->with(['hotspots' => fn ($hotspots) => $hotspots
+                            ->whereHas('targetPanorama', fn ($target) => $target->where('is_published', true))]),
                 ])
                 ->where('status', 'published')
                 ->whereIn('hotel_id', $hotelIds)
@@ -136,6 +139,7 @@ class CatalogController extends Controller
             $values = $model->{$attr} ?? [];
             if (! is_array($values)) {
                 $model->setAttribute($attr, []);
+
                 continue;
             }
             $model->setAttribute(

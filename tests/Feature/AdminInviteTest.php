@@ -31,6 +31,7 @@ class AdminInviteTest extends TestCase
             '2026_09_14_000005_create_packages_table',
             '2026_09_14_000006_create_package_role_table',
             '2026_09_14_000007_create_package_feature_table',
+            '2026_11_20_000400_add_actions_to_package_feature_table',
             '2026_09_14_000008_create_admin_package_table',
             '2026_09_16_000001_create_package_limits_table',
             '2026_09_16_000003_create_permissions_table',
@@ -41,6 +42,7 @@ class AdminInviteTest extends TestCase
         }
 
         Role::create(['name' => 'admin', 'is_global' => true, 'scope' => 'none']);
+        Role::create(['name' => 'manager', 'is_global' => false, 'scope' => 'location']);
         Role::create(['name' => 'hotel_admin', 'is_global' => false, 'scope' => 'hotel']);
         Feature::create(['key' => 'users', 'label' => 'People', 'category' => 'admin', 'sort_order' => 0]);
         Feature::create(['key' => 'bookings', 'label' => 'Bookings', 'category' => 'admin', 'sort_order' => 1]);
@@ -114,6 +116,24 @@ class AdminInviteTest extends TestCase
         $this->actingAs($this->orgAdmin(), 'admin')
             ->postJson('/admin/invites', $this->invitePayload($seat, ['packages' => [['packageId' => $seat->id]]]), self::JSON)
             ->assertStatus(422);
+    }
+
+    public function test_a_custom_role_takes_destinations_or_hotels_but_needs_one(): void
+    {
+        $seat = Package::create(['name' => 'Night desk', 'is_system' => false]);
+        $seat->roles()->sync(Role::whereIn('name', ['manager', 'hotel_admin'])->pluck('id'));
+        $seat->features()->sync(Feature::where('key', 'bookings')->pluck('id'));
+
+        $this->actingAs($this->orgAdmin(), 'admin');
+
+        $this->postJson('/admin/invites', $this->invitePayload($seat, ['packages' => [['packageId' => $seat->id]]]), self::JSON)
+            ->assertStatus(422);
+
+        $this->postJson('/admin/invites', $this->invitePayload($seat, ['packages' => [['packageId' => $seat->id, 'locationIds' => [3]]]]), self::JSON)
+            ->assertCreated();
+
+        $this->postJson('/admin/invites', $this->invitePayload($seat, ['packages' => [['packageId' => $seat->id, 'hotelIds' => [7]]]]), self::JSON)
+            ->assertCreated();
     }
 
     public function test_cannot_invite_someone_who_already_has_an_account(): void

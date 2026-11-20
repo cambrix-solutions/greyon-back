@@ -18,6 +18,10 @@
       "value": ""
     },
     {
+      "key": "custom_role_id",
+      "value": ""
+    },
+    {
       "key": "feature_id",
       "value": ""
     },
@@ -78,19 +82,7 @@
       "value": ""
     },
     {
-      "key": "offer_id",
-      "value": ""
-    },
-    {
-      "key": "offer_slug",
-      "value": ""
-    },
-    {
       "key": "faq_page_id",
-      "value": ""
-    },
-    {
-      "key": "media_id",
       "value": ""
     }
   ],
@@ -2130,6 +2122,370 @@
               }
             }
           ]
+        },
+        {
+          "name": "Reservations",
+          "item": [
+            {
+              "name": "List reservations",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/bookings?status=pending"
+              }
+            },
+            {
+              "name": "Get reservation",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/bookings/{{booking_id}}"
+              }
+            },
+            {
+              "name": "Change status",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/bookings/{{booking_id}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"confirmed\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Guests",
+          "item": [
+            {
+              "name": "List guests",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/guests?q=&perPage=25&page=1"
+              }
+            },
+            {
+              "name": "Guest profile",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/guests/profile?email=guest@example.com"
+              }
+            },
+            {
+              "name": "Save guest note",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/guests/note",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"guest@greyon.test\",\n  \"note\": \"Prefers a high floor.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reports",
+          "item": [
+            {
+              "name": "Summary",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/reports/summary?from=2026-12-01&to=2026-12-31",
+                "description": "Add hotelId, locationId, status, basis."
+              }
+            },
+            {
+              "name": "Export CSV",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/reports/export?from=2026-12-01&to=2026-12-31"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pages and FAQ",
+          "item": [
+            {
+              "name": "List pages",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/pages"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const j = pm.response.json();",
+                      "const f = (j.pages||[]).find(p => p.slug === 'faq');",
+                      "if (f) pm.collectionVariables.set('faq_page_id', f.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Write FAQ",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/pages/{{faq_page_id}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"published\",\n  \"blocks\": [\n    {\n      \"type\": \"heading\",\n      \"level\": 2,\n      \"text\": \"Booking\"\n    },\n    {\n      \"type\": \"faq\",\n      \"items\": [\n        {\n          \"question\": \"Can I cancel?\",\n          \"answer\": \"Yes, see the reservation terms.\"\n        },\n        {\n          \"question\": \"What time is check-in?\",\n          \"answer\": \"From 2 pm.\"\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "People, invites and roles",
+          "item": [
+            {
+              "name": "Seats",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/seats"
+              }
+            },
+            {
+              "name": "Team",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/team"
+              }
+            },
+            {
+              "name": "Invite by Google",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/invites",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"new.staff@example.com\",\n  \"name\": \"New Staff\",\n  \"packages\": [\n    {\n      \"packageId\": \"{{package_id}}\",\n      \"locationIds\": [\n        \"{{location_id}}\"\n      ],\n      \"hotelIds\": []\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Invites",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/invites"
+              }
+            },
+            {
+              "name": "Role options",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/roles/options"
+              }
+            },
+            {
+              "name": "List roles",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/roles"
+              }
+            },
+            {
+              "name": "Create custom role (copy id into custom_role_id)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/roles",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Front desk\",\n  \"description\": \"Reservations only\",\n  \"features\": [\n    { \"key\": \"bookings\", \"actions\": [\"view\", \"create\", \"edit\"] },\n    { \"key\": \"guests\", \"actions\": [\"view\"] }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Update custom role",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/roles/{{custom_role_id}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Front desk\",\n  \"description\": \"Reservations and guests\",\n  \"features\": [\n    { \"key\": \"bookings\", \"actions\": [\"view\", \"create\", \"edit\"] },\n    { \"key\": \"guests\", \"actions\": [\"view\"] },\n    { \"key\": \"reports\", \"actions\": [\"view\"] }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete custom role (400 while assigned)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/admin/roles/{{custom_role_id}}"
+              }
+            }
+          ]
         }
       ]
     },
@@ -2213,6 +2569,147 @@
             ],
             "url": "{{base_url}}/hotels/riverside"
           }
+        },
+        {
+          "name": "Availability and booking",
+          "item": [
+            {
+              "name": "Search availability",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/availability?hotelSlug=greyon-pp&checkIn=2026-12-10&checkOut=2026-12-13&rooms=1&adults=2&children=0",
+                "description": "Each result has subtotal (before discount), discount, offer, taxesFees and total."
+              }
+            },
+            {
+              "name": "Create reservation",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/bookings",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"hotelId\": \"{{hotel_id}}\",\n  \"roomTypeId\": \"{{room_type_id}}\",\n  \"ratePlanId\": \"{{rate_plan_id}}\",\n  \"checkIn\": \"2026-12-10\",\n  \"checkOut\": \"2026-12-13\",\n  \"rooms\": 1,\n  \"adults\": 2,\n  \"children\": 0,\n  \"guestFullName\": \"Test Guest\",\n  \"guestEmail\": \"guest@example.com\",\n  \"guestPhone\": \"+855 12 345 678\",\n  \"specialRequests\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const j = pm.response.json();",
+                      "const v = j.booking && j.booking.reference;",
+                      "if (v !== undefined && v !== null) pm.collectionVariables.set('booking_reference', v);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get booking by reference (legacy)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/bookings/{{booking_reference}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Other public",
+          "item": [
+            {
+              "name": "News list",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/news"
+              }
+            },
+            {
+              "name": "Hero slides",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/hero-slides"
+              }
+            },
+            {
+              "name": "Site settings",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/settings"
+              }
+            },
+            {
+              "name": "Send enquiry",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/enquiries",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Test Guest\",\n  \"email\": \"guest@example.com\",\n  \"phone\": \"+855 12 345 678\",\n  \"locationId\": \"{{location_id}}\",\n  \"subject\": \"Question\",\n  \"message\": \"Hello\",\n  \"consent\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -2488,1008 +2985,6 @@
           ]
         }
       ]
-    },
-    {
-      "name": "Phase 2 — Public (guest site)",
-      "item": [
-        {
-          "name": "Availability and booking",
-          "item": [
-            {
-              "name": "Search availability",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/availability?hotelSlug=greyon-pp&checkIn=2026-12-10&checkOut=2026-12-13&rooms=1&adults=2&children=0",
-                "description": "Each result has subtotal (before discount), discount, offer, taxesFees and total."
-              }
-            },
-            {
-              "name": "Search availability — with promo code",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/availability?hotelSlug=greyon-pp&checkIn=2026-12-10&checkOut=2026-12-13&rooms=1&adults=2&children=0&offerCode=WELCOME10"
-              }
-            },
-            {
-              "name": "Create reservation",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/bookings",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"hotelId\": \"{{hotel_id}}\",\n  \"roomTypeId\": \"{{room_type_id}}\",\n  \"ratePlanId\": \"{{rate_plan_id}}\",\n  \"checkIn\": \"2026-12-10\",\n  \"checkOut\": \"2026-12-13\",\n  \"rooms\": 1,\n  \"adults\": 2,\n  \"children\": 0,\n  \"guestFullName\": \"Test Guest\",\n  \"guestEmail\": \"guest@example.com\",\n  \"guestPhone\": \"+855 12 345 678\",\n  \"specialRequests\": \"\",\n  \"offerCode\": null\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              },
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "type": "text/javascript",
-                    "exec": [
-                      "const j = pm.response.json();",
-                      "const v = j.booking && j.booking.reference;",
-                      "if (v !== undefined && v !== null) pm.collectionVariables.set('booking_reference', v);"
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "name": "Find my reservation (reference + email)",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/reservations/lookup",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"reference\": \"{{booking_reference}}\",\n  \"email\": \"guest@example.com\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "description": "Returns reservation, receipt (pricing incl. discount/offerTitle) and timeline. Wrong email and wrong reference give the same 404. Throttled 10/min."
-              }
-            },
-            {
-              "name": "Get booking by reference (legacy)",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/bookings/{{booking_reference}}"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Offers",
-          "item": [
-            {
-              "name": "List offers",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/offers",
-                "description": "Published and live only. Promo-code offers are never listed."
-              }
-            },
-            {
-              "name": "Get offer by slug",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/offers/{{offer_slug}}"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Gallery",
-          "item": [
-            {
-              "name": "Gallery",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/gallery?perPage=24&page=1"
-              }
-            },
-            {
-              "name": "Gallery — by destination",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/gallery?location=phnom-penh"
-              }
-            },
-            {
-              "name": "Gallery — by hotel",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/gallery?hotel=greyon-pp"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Pages and FAQ",
-          "item": [
-            {
-              "name": "List pages",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/pages"
-              }
-            },
-            {
-              "name": "FAQ",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/pages/faq",
-                "description": "404 until staff publish the FAQ page."
-              }
-            },
-            {
-              "name": "Privacy",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/pages/privacy"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Other public",
-          "item": [
-            {
-              "name": "News list",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/news"
-              }
-            },
-            {
-              "name": "Hero slides",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/hero-slides"
-              }
-            },
-            {
-              "name": "Site settings",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/settings"
-              }
-            },
-            {
-              "name": "Send enquiry",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/enquiries",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Test Guest\",\n  \"email\": \"guest@example.com\",\n  \"phone\": \"+855 12 345 678\",\n  \"locationId\": \"{{location_id}}\",\n  \"subject\": \"Question\",\n  \"message\": \"Hello\",\n  \"consent\": true\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Phase 2 — Admin (staff panel)",
-      "item": [
-        {
-          "name": "Reservations",
-          "item": [
-            {
-              "name": "List reservations",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/bookings?status=pending"
-              }
-            },
-            {
-              "name": "Get reservation (with timeline)",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/bookings/{{booking_id}}"
-              }
-            },
-            {
-              "name": "Change status",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/bookings/{{booking_id}}",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"status\": \"confirmed\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Offers",
-          "item": [
-            {
-              "name": "List offers",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/offers"
-              }
-            },
-            {
-              "name": "Create offer (automatic)",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/offers",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"Stay 3 save 15%\",\n  \"slug\": \"stay-3-save-15\",\n  \"summary\": \"15% off for 3+ nights\",\n  \"discountType\": \"percent\",\n  \"discountValue\": 15,\n  \"minNights\": 3,\n  \"hotelId\": null,\n  \"locationId\": null,\n  \"status\": \"published\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              },
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "type": "text/javascript",
-                    "exec": [
-                      "const j = pm.response.json();",
-                      "const v = j.offer && j.offer.id;",
-                      "if (v !== undefined && v !== null) pm.collectionVariables.set('offer_id', v);",
-                      "pm.collectionVariables.set('offer_slug', j.offer && j.offer.slug);"
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "name": "Create offer (promo code)",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/offers",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"Welcome\",\n  \"slug\": \"welcome-10\",\n  \"discountType\": \"fixed\",\n  \"discountValue\": 10,\n  \"code\": \"WELCOME10\",\n  \"status\": \"published\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "name": "Get offer",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/offers/{{offer_id}}"
-              }
-            },
-            {
-              "name": "Update offer",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/offers/{{offer_id}}",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"status\": \"draft\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "name": "Delete offer",
-              "request": {
-                "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/offers/{{offer_id}}"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Calendar",
-          "item": [
-            {
-              "name": "Month grid",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/calendar?month=2026-12&hotelId={{hotel_id}}&roomTypeId={{room_type_id}}"
-              }
-            },
-            {
-              "name": "Bulk stop-sell (weekends)",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/calendar/bulk",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"roomTypeId\": \"{{room_type_id}}\",\n  \"from\": \"2026-12-01\",\n  \"to\": \"2026-12-31\",\n  \"weekdays\": [\n    5,\n    6\n  ],\n  \"stopSell\": true\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "name": "Bulk units",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/calendar/bulk",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"roomTypeId\": \"{{room_type_id}}\",\n  \"from\": \"2026-12-01\",\n  \"to\": \"2026-12-31\",\n  \"availableUnits\": 4\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "name": "Bulk price and stay rules",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/calendar/bulk",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"roomTypeId\": \"{{room_type_id}}\",\n  \"from\": \"2026-12-20\",\n  \"to\": \"2026-12-31\",\n  \"ratePlanId\": \"{{rate_plan_id}}\",\n  \"price\": 120,\n  \"minStay\": 2,\n  \"maxStay\": 14\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Guests",
-          "item": [
-            {
-              "name": "List guests",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/guests?q=&perPage=25&page=1"
-              }
-            },
-            {
-              "name": "Guest profile",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/guests/profile?email=guest@example.com"
-              }
-            },
-            {
-              "name": "Save guest note",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/guests/note",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"email\": \"guest@example.com\",\n  \"note\": \"Prefers a high floor.\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Reports",
-          "item": [
-            {
-              "name": "Summary",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/reports/summary?from=2026-12-01&to=2026-12-31",
-                "description": "Add hotelId, locationId, status, basis. Occupancy is included when from and to are given."
-              }
-            },
-            {
-              "name": "Export CSV",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/reports/export?from=2026-12-01&to=2026-12-31"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Notifications",
-          "item": [
-            {
-              "name": "Inbox (filters)",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/notifications?unread=1&type=&hotelId=&from=&to=&perPage=25"
-              }
-            },
-            {
-              "name": "Unread count",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/notifications/unread-count"
-              }
-            },
-            {
-              "name": "Mark all read",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/notifications/read-all"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Activity log",
-          "item": [
-            {
-              "name": "Activity",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/activity?perPage=25&page=1"
-              }
-            },
-            {
-              "name": "Activity — filtered",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/activity?subjectType=hotel&action=updated&hotelId={{hotel_id}}&from=2026-11-01&to=2026-12-31&q="
-              }
-            }
-          ]
-        },
-        {
-          "name": "Pages and FAQ",
-          "item": [
-            {
-              "name": "List pages",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/pages"
-              },
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "type": "text/javascript",
-                    "exec": [
-                      "const j = pm.response.json();",
-                      "const f = (j.pages||[]).find(p => p.slug === 'faq');",
-                      "if (f) pm.collectionVariables.set('faq_page_id', f.id);"
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "name": "Write FAQ",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/pages/{{faq_page_id}}",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"status\": \"published\",\n  \"blocks\": [\n    {\n      \"type\": \"heading\",\n      \"level\": 2,\n      \"text\": \"Booking\"\n    },\n    {\n      \"type\": \"faq\",\n      \"items\": [\n        {\n          \"question\": \"Can I cancel?\",\n          \"answer\": \"Yes, see the reservation terms.\"\n        },\n        {\n          \"question\": \"What time is check-in?\",\n          \"answer\": \"From 2 pm.\"\n        }\n      ]\n    }\n  ]\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Media and gallery",
-          "item": [
-            {
-              "name": "List media",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/media"
-              }
-            },
-            {
-              "name": "Hide from gallery",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/media/{{media_id}}",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"inGallery\": false\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "name": "Show in gallery",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/media/{{media_id}}",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"inGallery\": true\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "People, invites and roles",
-          "item": [
-            {
-              "name": "Seats",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/seats"
-              }
-            },
-            {
-              "name": "Team",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/team"
-              }
-            },
-            {
-              "name": "Invite by Google",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/invites",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"email\": \"new.staff@example.com\",\n  \"name\": \"New Staff\",\n  \"packages\": [\n    {\n      \"packageId\": \"{{package_id}}\",\n      \"locationIds\": [\n        \"{{location_id}}\"\n      ],\n      \"hotelIds\": []\n    }\n  ]\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "name": "Invites",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/invites"
-              }
-            },
-            {
-              "name": "Role options",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/roles/options"
-              }
-            },
-            {
-              "name": "Create custom role",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": "{{base_url}}/admin/roles",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Front desk\",\n  \"description\": \"Reservations only\",\n  \"scope\": \"location\",\n  \"featureKeys\": [\n    \"bookings\",\n    \"guests\"\n  ]\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ],
-      "description": "Sign in under Admin > Auth first. A seat only sees what its package allows; out-of-scope records return 404."
     }
   ]
 }

@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Guest or admin-created reservation.
@@ -33,9 +32,6 @@ class Booking extends Model
         'status',
         'source',
         'notes',
-        'offer_id',
-        'offer_title',
-        'discount_total',
     ];
 
     protected function casts(): array
@@ -53,7 +49,6 @@ class Booking extends Model
             'subtotal' => 'decimal:2',
             'taxes_fees' => 'decimal:2',
             'total' => 'decimal:2',
-            'discount_total' => 'decimal:2',
         ];
     }
 
@@ -68,12 +63,6 @@ class Booking extends Model
         }
 
         return max(0, (int) $this->check_in->diffInDays($this->check_out));
-    }
-
-    /** @return HasMany<BookingEvent, $this> */
-    public function events(): HasMany
-    {
-        return $this->hasMany(BookingEvent::class)->orderBy('created_at')->orderBy('id');
     }
 
     public function user(): BelongsTo

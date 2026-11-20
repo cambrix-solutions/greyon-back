@@ -596,7 +596,7 @@ Needs the `roles` feature (seeded for the org Admin seat; `php artisan migrate` 
 
 Then `GET /admin/seats` lists the new role, and `POST /admin/team` can assign it with `locationIds` (scope `location`) or `hotelIds` (scope `hotel`).
 
-## 15. Pages CMS (admin + public)
+## 15. Pages CMS (admin)
 
 Needs the `pages` feature (seeded for the org Admin seat; `php artisan migrate` adds it and creates the three legal pages as drafts). Writes need a global seat.
 
@@ -608,8 +608,6 @@ Needs the `pages` feature (seeded for the org Admin seat; `php artisan migrate` 
 | image `url` = `javascript:...` | 422 (must start with `http(s)://`, `/` or `uploads/`). |
 | `PATCH /admin/pages/{id}` `{"slug":"x"}` on a built-in page | 400. |
 | `DELETE /admin/pages/{id}` on a built-in page | 400 (set it to draft instead); custom page: 200. |
-| `GET /pages/{slug}` (no login) | published page; a draft is 404. |
-| `GET /pages` (no login) | published pages (`slug`, `title`) for footer links. |
 
 ## 16. Public data and wording
 
@@ -621,24 +619,12 @@ Needs the `pages` feature (seeded for the org Admin seat; `php artisan migrate` 
 | Create a reservation, then check `GET /notifications` | title is "New reservation"; after a status change, "Reservation <status>". |
 | `GET /bookings/{unknown-reference}` | 404 "Reservation not found". |
 
-## 17. Reservation timeline, find-my-reservation, receipt
+## 18. Guests, Reports
+
+Both are limited to the hotels the signed-in seat can see. Out of scope is a 404 (or simply not in the list).
 
 | Call | Expect |
 |---|---|
-| `POST /reservations/lookup` `{"reference":"GRY-ABC123","email":"guest@x.com"}` (no login) | `reservation` with `nights`, `hotel`, `roomType`, `ratePlan.cancellationPolicy`, `pricing` (receipt), `timeline`. No internal notes. |
-| same with the wrong email, or an unknown reference | the same 404 message for both. More than 10 tries a minute: 429. |
-| `GET /admin/bookings/{id}` | `booking.events` (who changed what, when) and `booking.nights`. |
-| `PATCH /admin/bookings/{id}` `{"status":"confirmed"}`, then GET it again | a `status_changed` event from pending to confirmed with your admin as `actorType`. |
-| `GET /my/bookings/{reference}` (signed-in guest) | the existing `booking` plus a new `reservation` (same shape as the lookup). |
-| `GET /bookings/{reference}` (public) | unchanged, but `notes` is no longer included. |
-
-## 18. Notifications inbox, Guests, Reports
-
-All three are limited to the hotels the signed-in seat can see. Out of scope is a 404 (or simply not in the list).
-
-| Call | Expect |
-|---|---|
-| `GET /admin/notifications?unread=1&type=booking.created&hotelId=1&from=2026-11-01&to=2026-11-30&perPage=20&page=1` | `notifications`, `unreadCount` (always the full unread total), `types` (for a filter dropdown), `meta` {total,page,perPage,lastPage}. perPage over 100: 422. |
 | `GET /admin/guests?q=dara&page=1&perPage=25` | `guests` (one per e-mail: reservations, cancelled, nights, reservedValue, lastCheckIn, note) and `meta`. A manager only sees guests from their own hotels. |
 | `GET /admin/guests/profile?email=dara@x.com` | guest summary plus every reservation they can see. Guest outside scope: 404. |
 | `PUT /admin/guests/note` `{"email":"dara@x.com","note":"Prefers a high floor"}` | saves it; an empty note clears it. Guest outside scope: 404. |
@@ -646,47 +632,11 @@ All three are limited to the hotels the signed-in seat can see. Out of scope is 
 | `GET /admin/reports/export` (same filters) | CSV download, one row per reservation, no payment columns, no internal notes. |
 | A seat without the `guests` / `reports` feature | 403 on its endpoints. |
 
-## 19. Calendar (month grid, bulk edit) and occupancy
+## 22. FAQ
 
 | Call | Expect |
 |---|---|
-| `GET /admin/calendar?month=2026-12&hotelId=1&roomTypeId=` | per room type: `days` (units, booked, free, stopSell, overridden) and `ratePlans` with per-day `price`, `minStay`, `maxStay`, `overridden`. A manager only gets their own hotels. |
-| `PUT /admin/calendar/bulk` `{"roomTypeId":1,"from":"2026-12-01","to":"2026-12-31","weekdays":[5,6],"stopSell":true}` | closes those weekdays; `updatedDays` says how many. Repeat it: no duplicates. |
-| same with `{"availableUnits":3}` | sets units; stop-sell is kept as it was. |
-| `{"ratePlanId":1,"price":150,"minStay":2}` | price / stay rules for that rate plan; `maxStay: null` clears a rule. Plan of another room: 422. |
-| range over a year, nothing to change, bad weekday | 422. Room type outside the seat: 404. |
-| `GET /admin/reports/summary?from=2026-12-01&to=2026-12-31` | now includes `occupancy` {availableRoomNights, bookedRoomNights, rate, byHotel}. Without a date range it is `null`. |
-
-## 20. Offers (special rates)
-
-| Call | Expect |
-|---|---|
-| `POST /admin/offers` `{"title":"Early bird","discountType":"percent","discountValue":10,"hotelId":1,"bookFrom":"2026-11-01","bookTo":"2026-12-31","stayFrom":"2027-01-01","stayTo":"2027-03-31","minNights":2,"code":"SUMMER","status":"published"}` | 201 with `slug` (auto from the title), `code` stored upper case, `live`. Percent over 100, hotel outside the destination, duplicate code: 422. |
-| `GET/PATCH/DELETE /admin/offers/{id}` | Hotel / destination seats only reach offers in their own scope (404 otherwise); an offer for everywhere needs a global seat (403 on create, 404 when reading). |
-| `GET /offers`, `GET /offers/{slug}` (no login) | Published offers open for booking today. Drafts, expired / future windows and promo-code offers are never listed (detail: 404). Filter with `?hotelSlug=` or `?locationSlug=`. |
-| `GET /availability?...&offerCode=SUMMER` | each result has `subtotal` (before discount), `discount`, `offer` {title, discountType, discountValue} or `null`, `taxesFees` (on the lower price) and `total`. The biggest discount wins. Offers with a code apply only when the code is sent. |
-| `POST /bookings` with `offerCode` | the reservation stores `offerTitle` and `discountTotal`; the receipt (`POST /reservations/lookup`) shows `pricing.discount` and `pricing.offerTitle` even if the offer is edited or deleted later. |
-
-## 21. Activity log
-
-Every create / update / delete of destinations, hotels, room types, rate plans, reservations, offers, pages, news, services, products, hero slides, media, site settings, people and roles is recorded when a signed-in admin or developer makes it. Seeders, guests and system jobs are not recorded.
-
-| Call | Expect |
-|---|---|
-| Edit a hotel's name as an admin, then `GET /admin/activity` | newest first: `actor` {type,id,name}, `action: "updated"`, `subject` {type:"hotel", id, label}, `changes` [{field:"name", from, to}], `hotelId`, `locationId`. |
-| `GET /admin/activity?subjectType=hotel&action=updated&actorId=3&hotelId=1&locationId=1&from=2026-11-01&to=2026-11-30&q=greyon&perPage=25&page=1` | filtered list plus `meta` {total,page,perPage,lastPage} and `subjectTypes` for the filter dropdown. |
-| Change a person's password | an entry for subject `person` with `from` / `to` shown as `(hidden)`. Passwords, tokens and Google ids are never stored. |
-| Manager seat | only entries for its own hotels / destinations. Entries that belong to no hotel (site settings, services, roles) show for global seats and developers only. |
-| Seat without the `activity` feature | 403. |
-
-## 22. Public gallery and FAQ
-
-| Call | Expect |
-|---|---|
-| `GET /gallery` | `gallery[]` of {id, src, alt, location{slug,name}, hotel{slug,name}|null} newest first, plus `meta` {total,page,perPage,lastPage}. Only items of published destinations / hotels, and only those with `inGallery` on. |
-| `GET /gallery?location=phnom-penh&hotel=greyon-pp&perPage=24&page=1` | filtered; an unknown or unpublished slug is 404; `perPage` over 100 is 422. |
-| `PATCH /admin/media/{id}` `{"inGallery": false}` | the item stays in the media library but leaves the public gallery. `mediaItem.inGallery` is returned on every media call. |
-| `GET /pages/faq` | 404 until staff publish it. A built-in page, like Privacy and Terms. |
+| `GET /admin/pages` | a built-in `faq` page exists (draft). It cannot be deleted or renamed, like Privacy and Terms. |
 | `PATCH /admin/pages/{id}` with block `{"type":"faq","items":[{"question","answer"}]}` | stored with only those two keys. An item missing either one is 422. Plain `list` items must now be text. |
 
 ## What this doesn't cover yet

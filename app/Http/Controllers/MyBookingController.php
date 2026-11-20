@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\BookingResource;
-use App\Http\Resources\ReservationResource;
+use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Models\User;
 use App\Services\BookingService;
@@ -58,7 +57,6 @@ class MyBookingController extends Controller
 
         return response()->json([
             'booking' => new BookingResource($booking),
-            'reservation' => new ReservationResource($booking->load('events')),
         ]);
     }
 

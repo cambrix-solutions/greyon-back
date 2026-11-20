@@ -12,6 +12,7 @@ use App\Services\AccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
@@ -32,20 +33,7 @@ class GuestController extends Controller
             'perPage' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $notes = GuestNote::query()->pluck('note', 'email');
-
-        $guests = $this->scopedReservations($request)
-            ->groupBy(fn (Booking $b) => mb_strtolower(trim($b->guest_email)))
-            ->map(fn (Collection $rows, string $email) => $this->summary($email, $rows, $notes[$email] ?? null))
-            ->when($data['q'] ?? null, function (Collection $all, string $term) {
-                $term = mb_strtolower($term);
-
-                return $all->filter(fn (array $g) => str_contains(mb_strtolower($g['fullName']), $term)
-                    || str_contains($g['email'], $term)
-                    || str_contains((string) $g['phone'], $term));
-            })
-            ->sortByDesc('lastReservationAt')
-            ->values();
+        $guests = $this->guestList($request, $data['q'] ?? null);
 
         $perPage = (int) ($data['perPage'] ?? 25);
         $page = (int) ($data['page'] ?? 1);
@@ -59,6 +47,56 @@ class GuestController extends Controller
                 'lastPage' => max(1, (int) ceil($guests->count() / $perPage)),
             ],
         ]);
+    }
+
+    /** GET /admin/guests/export?q= - the same list as index(), as CSV (no staff notes). */
+    public function export(Request $request): StreamedResponse
+    {
+        $data = $request->validate(['q' => ['nullable', 'string', 'max:100']]);
+        $guests = $this->guestList($request, $data['q'] ?? null);
+
+        return response()->streamDownload(function () use ($guests) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Guest', 'Email', 'Phone', 'Reservations', 'Cancelled', 'Nights', 'Value', 'Last check-in', 'Last reservation']);
+
+            foreach ($guests as $g) {
+                fputcsv($out, array_map($this->safeCell(...), [
+                    $g['fullName'], $g['email'], $g['phone'],
+                    $g['reservations'], $g['cancelled'], $g['nights'], $g['reservedValue'],
+                    $g['lastCheckIn'], $g['lastReservationAt'],
+                ]));
+            }
+            fclose($out);
+        }, 'guests-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /** @return Collection<int, array<string, mixed>> newest first */
+    private function guestList(Request $request, ?string $term): Collection
+    {
+        $notes = GuestNote::query()->pluck('note', 'email');
+
+        return $this->scopedReservations($request)
+            ->groupBy(fn (Booking $b) => mb_strtolower(trim($b->guest_email)))
+            ->map(fn (Collection $rows, string $email) => $this->summary($email, $rows, $notes[$email] ?? null))
+            ->when($term, function (Collection $all, string $term) {
+                $term = mb_strtolower($term);
+
+                return $all->filter(fn (array $g) => str_contains(mb_strtolower((string) $g['fullName']), $term)
+                    || str_contains($g['email'], $term)
+                    || str_contains((string) $g['phone'], $term));
+            })
+            ->sortByDesc('lastReservationAt')
+            ->values();
+    }
+
+    /** Stops spreadsheet formulas: a cell starting with = + - @ is read as a formula by Excel. */
+    private function safeCell(mixed $value): mixed
+    {
+        if (is_string($value) && $value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+            return "'".$value;
+        }
+
+        return $value;
     }
 
     /** GET /admin/guests/profile?email= - guest summary, note and every reservation they can see. */

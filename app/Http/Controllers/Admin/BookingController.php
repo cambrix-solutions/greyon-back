@@ -24,6 +24,9 @@ class BookingController extends Controller
 {
     use AuthorizesAdminPanel;
 
+    /** Sources staff can set on a reservation they enter themselves. */
+    private const STAFF_SOURCES = ['admin', 'phone', 'walk_in', 'email'];
+
     public function __construct(
         private readonly AccessService $access,
         private readonly BookingService $bookings,
@@ -54,7 +57,7 @@ class BookingController extends Controller
     {
         $this->authorizeScope($request, $booking);
 
-        return response()->json(['booking' => new BookingResource($booking->load('events'))]);
+        return response()->json(['booking' => new BookingResource($booking)]);
     }
 
     public function store(Request $request): JsonResponse
@@ -64,7 +67,9 @@ class BookingController extends Controller
 
         $booking = $this->bookings->create([
             ...$data,
-            'source' => 'admin',
+            // Where the reservation came from (Reports -> By source). Staff
+            // pick phone / walk-in / email; anything else entered here is `admin`.
+            'source' => $data['source'] ?? 'admin',
             'status' => $data['status'] ?? 'pending',
         ]);
 
@@ -137,6 +142,7 @@ class BookingController extends Controller
             'specialRequests' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'status' => ['sometimes', Rule::in(['pending', 'confirmed', 'cancelled', 'completed'])],
+            'source' => ['sometimes', Rule::in(self::STAFF_SOURCES)],
         ]);
 
         return $this->mapCamel($data);

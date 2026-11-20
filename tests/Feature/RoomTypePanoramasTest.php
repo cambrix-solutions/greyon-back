@@ -10,6 +10,7 @@ use App\Models\Location;
 use App\Models\Package;
 use App\Models\RoomType;
 use App\Models\RoomTypePanorama;
+use App\Models\RoomTypePanoramaHotspot;
 use App\Services\PanoramaCompressor;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile;
@@ -39,6 +40,7 @@ class RoomTypePanoramasTest extends TestCase
             '2026_09_15_000003_create_room_types_table.php',
             '2026_11_04_000100_add_panorama_path_to_room_types_table.php',
             '2026_11_20_000300_create_room_type_panoramas_table.php',
+            '2026_11_20_000600_add_captions_and_hotspots_to_panoramas.php',
             '2026_09_15_000004_create_rate_plans_table.php',
             '2026_09_19_000001_create_ops_and_cms_tables.php',
             '2026_09_27_000200_add_location_id_to_news_table.php',
@@ -335,9 +337,12 @@ class RoomTypePanoramasTest extends TestCase
         $linked->update(['panorama_path' => 'https://cdn.example.com/360.jpg']);
         $this->room('none');
 
+        $hotspots = require database_path('migrations/2026_11_20_000600_add_captions_and_hotspots_to_panoramas.php');
         $migration = require database_path('migrations/2026_11_20_000300_create_room_type_panoramas_table.php');
+        $hotspots->down();
         $migration->down();
         $migration->up();
+        $hotspots->up();
 
         $rows = RoomTypePanorama::orderBy('room_type_id')->get();
         $this->assertCount(2, $rows);
@@ -387,5 +392,188 @@ class RoomTypePanoramasTest extends TestCase
         $this->post("/admin/room-types/{$room->id}/panoramas", [
             'panoramas' => [UploadedFile::fake()->image('fits.jpg', 20, 10)->size(PanoramaCompressor::MAX_UPLOAD_KB)],
         ], self::JSON)->assertCreated();
+    }
+
+    public function test_caption_can_be_set_cleared_and_is_optional_on_publish(): void
+    {
+        $room = $this->room();
+        $this->actingAs($this->dev(), 'developer');
+        [$a] = $this->upload($room, 1);
+
+        $this->patchJson("/admin/room-types/{$room->id}/panoramas/{$a}", ['caption' => '  Bedroom  '])
+            ->assertOk()
+            ->assertJsonPath('panoramas.0.caption', 'Bedroom')
+            ->assertJsonPath('panoramas.0.isPublished', true);
+
+        $this->patchJson("/admin/room-types/{$room->id}/panoramas/{$a}", ['caption' => ''])
+            ->assertOk()
+            ->assertJsonPath('panoramas.0.caption', null);
+
+        $this->patchJson("/admin/room-types/{$room->id}/panoramas/{$a}", ['caption' => str_repeat('x', 81)])
+            ->assertStatus(422);
+
+        $this->patchJson("/admin/room-types/{$room->id}/panoramas/{$a}", ['isPublished' => false, 'caption' => 'Bath'])
+            ->assertOk()
+            ->assertJsonPath('panoramas.0.isPublished', false)
+            ->assertJsonPath('panoramas.0.caption', 'Bath');
+    }
+
+    public function test_hotspots_can_be_created_updated_and_deleted(): void
+    {
+        $room = $this->room();
+        $this->actingAs($this->dev(), 'developer');
+        [$a, $b, $c] = $this->upload($room, 3);
+
+        $created = $this->postJson("/admin/room-types/{$room->id}/panoramas/{$a}/hotspots", [
+            'targetPanoramaId' => $b,
+            'yaw' => -12.5,
+            'pitch' => 4.25,
+            'label' => '  Bathroom  ',
+        ])->assertCreated();
+
+        $created->assertJsonCount(1, 'hotspots');
+        $created->assertJsonPath('hotspots.0.targetPanoramaId', $b);
+        $created->assertJsonPath('hotspots.0.yaw', -12.5);
+        $created->assertJsonPath('hotspots.0.pitch', 4.25);
+        $created->assertJsonPath('hotspots.0.label', 'Bathroom');
+        $hotspotId = $created->json('hotspots.0.id');
+
+        $this->getJson("/admin/room-types/{$room->id}/panoramas/{$a}/hotspots")
+            ->assertOk()
+            ->assertJsonCount(1, 'hotspots')
+            ->assertJsonPath('hotspots.0.id', $hotspotId);
+
+        $this->patchJson("/admin/room-types/{$room->id}/panoramas/{$a}/hotspots/{$hotspotId}", [
+            'targetPanoramaId' => $c,
+            'yaw' => 10,
+            'pitch' => -8,
+            'label' => 'Living room',
+        ])->assertOk()
+            ->assertJsonPath('hotspots.0.targetPanoramaId', $c)
+            ->assertJsonPath('hotspots.0.yaw', 10)
+            ->assertJsonPath('hotspots.0.pitch', -8)
+            ->assertJsonPath('hotspots.0.label', 'Living room');
+
+        $this->patchJson("/admin/room-types/{$room->id}/panoramas/{$a}/hotspots/{$hotspotId}", [
+            'label' => '',
+        ])->assertOk()->assertJsonPath('hotspots.0.label', null);
+
+        $this->deleteJson("/admin/room-types/{$room->id}/panoramas/{$a}/hotspots/{$hotspotId}")
+            ->assertOk()
+            ->assertJsonCount(0, 'hotspots');
+    }
+
+    public function test_hotspot_validation_and_scoping(): void
+    {
+        $room = $this->room();
+        $other = $this->room('other');
+        $this->actingAs($this->dev(), 'developer');
+        [$a, $b] = $this->upload($room, 2);
+        [$foreign] = $this->upload($other, 1);
+
+        $url = "/admin/room-types/{$room->id}/panoramas/{$a}/hotspots";
+
+        $this->postJson($url, [
+            'targetPanoramaId' => $a,
+            'yaw' => 0,
+            'pitch' => 0,
+        ])->assertStatus(422);
+
+        $this->postJson($url, [
+            'targetPanoramaId' => $foreign,
+            'yaw' => 0,
+            'pitch' => 0,
+        ])->assertStatus(422);
+
+        $this->postJson($url, [
+            'targetPanoramaId' => $b,
+            'yaw' => 181,
+            'pitch' => 0,
+        ])->assertStatus(422);
+
+        $this->postJson($url, [
+            'targetPanoramaId' => $b,
+            'yaw' => 0,
+            'pitch' => -91,
+        ])->assertStatus(422);
+
+        $hotspotId = $this->postJson($url, [
+            'targetPanoramaId' => $b,
+            'yaw' => 1,
+            'pitch' => 1,
+        ])->assertCreated()->json('hotspots.0.id');
+
+        $this->patchJson("/admin/room-types/{$room->id}/panoramas/{$a}/hotspots/{$hotspotId}", [])
+            ->assertStatus(422);
+
+        $this->deleteJson("/admin/room-types/{$other->id}/panoramas/{$a}/hotspots/{$hotspotId}")
+            ->assertNotFound();
+        $this->deleteJson("/admin/room-types/{$room->id}/panoramas/{$b}/hotspots/{$hotspotId}")
+            ->assertNotFound();
+    }
+
+    public function test_public_catalog_includes_captions_and_only_hotspots_to_published_photos(): void
+    {
+        $room = $this->room();
+        $this->actingAs($this->dev(), 'developer');
+        [$a, $b, $c] = $this->upload($room, 3);
+
+        $this->patchJson("/admin/room-types/{$room->id}/panoramas/{$a}", ['caption' => 'Bedroom'])->assertOk();
+        $this->patchJson("/admin/room-types/{$room->id}/panoramas/{$b}", ['caption' => 'Bathroom'])->assertOk();
+        $this->patchJson("/admin/room-types/{$room->id}/panoramas/{$c}", [
+            'caption' => 'Dressing room',
+            'isPublished' => false,
+        ])->assertOk();
+
+        $this->postJson("/admin/room-types/{$room->id}/panoramas/{$a}/hotspots", [
+            'targetPanoramaId' => $b,
+            'yaw' => 20,
+            'pitch' => -5,
+            'label' => 'To bathroom',
+        ])->assertCreated();
+        $this->postJson("/admin/room-types/{$room->id}/panoramas/{$a}/hotspots", [
+            'targetPanoramaId' => $c,
+            'yaw' => -30,
+            'pitch' => 2,
+        ])->assertCreated();
+
+        $admin = $this->getJson("/admin/room-types/{$room->id}")->assertOk();
+        $admin->assertJsonPath('roomType.panoramas.0.caption', 'Bedroom');
+        $admin->assertJsonCount(2, 'roomType.panoramas.0.hotspots');
+
+        $catalog = $this->getJson('/catalog')->assertOk();
+        $catalog->assertJsonCount(2, 'roomTypes.0.panoramas');
+        $catalog->assertJsonPath('roomTypes.0.panoramas.0.caption', 'Bedroom');
+        $catalog->assertJsonPath('roomTypes.0.panoramas.1.caption', 'Bathroom');
+        $catalog->assertJsonCount(1, 'roomTypes.0.panoramas.0.hotspots');
+        $catalog->assertJsonPath('roomTypes.0.panoramas.0.hotspots.0.targetPanoramaId', $b);
+        $catalog->assertJsonPath('roomTypes.0.panoramas.0.hotspots.0.label', 'To bathroom');
+        $catalog->assertJsonPath('roomTypes.0.panoramas.0.hotspots.0.yaw', 20);
+        $this->assertArrayNotHasKey('path', $catalog->json('roomTypes.0.panoramas.0') ?? []);
+    }
+
+    public function test_deleting_a_photo_removes_hotspots_that_point_from_or_to_it(): void
+    {
+        $room = $this->room();
+        $this->actingAs($this->dev(), 'developer');
+        [$a, $b] = $this->upload($room, 2);
+
+        $this->postJson("/admin/room-types/{$room->id}/panoramas/{$a}/hotspots", [
+            'targetPanoramaId' => $b,
+            'yaw' => 1,
+            'pitch' => 1,
+        ])->assertCreated();
+        $this->postJson("/admin/room-types/{$room->id}/panoramas/{$b}/hotspots", [
+            'targetPanoramaId' => $a,
+            'yaw' => 2,
+            'pitch' => 2,
+        ])->assertCreated();
+
+        $this->deleteJson("/admin/room-types/{$room->id}/panoramas/{$a}")->assertOk();
+
+        $this->assertSame(0, RoomTypePanoramaHotspot::count());
+        $this->getJson("/admin/room-types/{$room->id}/panoramas/{$b}/hotspots")
+            ->assertOk()
+            ->assertJsonCount(0, 'hotspots');
     }
 }

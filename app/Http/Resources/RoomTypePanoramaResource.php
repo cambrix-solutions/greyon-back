@@ -19,8 +19,10 @@ class RoomTypePanoramaResource extends JsonResource
         return [
             'id' => $this->id,
             'url' => $this->url(),
+            'caption' => $this->caption,
             'isPublished' => $this->is_published,
             'sortOrder' => $this->sort_order,
+            'hotspots' => RoomTypePanoramaHotspotResource::collection($this->whenLoaded('hotspots')),
         ];
     }
 }

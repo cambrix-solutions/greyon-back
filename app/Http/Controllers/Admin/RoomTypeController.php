@@ -54,7 +54,7 @@ class RoomTypeController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $roomTypes = RoomType::with(['hotel', 'panoramas'])
+        $roomTypes = RoomType::with(['hotel', 'panoramas.hotspots'])
             ->get()
             ->filter(fn (RoomType $roomType) => $this->adminCanAccessHotel($request, $roomType->hotel_id))
             ->values();
@@ -66,7 +66,7 @@ class RoomTypeController extends Controller
     {
         $this->authorizeScope($request, $roomType);
 
-        return response()->json(['roomType' => new RoomTypeResource($roomType->load(['hotel', 'panoramas']))]);
+        return response()->json(['roomType' => new RoomTypeResource($roomType->load(['hotel', 'panoramas.hotspots']))]);
     }
 
     public function store(Request $request): JsonResponse
@@ -78,7 +78,7 @@ class RoomTypeController extends Controller
         // (e.g. status, maxAdults) are reflected in the response —
         // Eloquent's create() doesn't otherwise pick those up on the
         // in-memory instance.
-        return response()->json(['roomType' => new RoomTypeResource($roomType->refresh()->load(['hotel', 'panoramas']))], 201);
+        return response()->json(['roomType' => new RoomTypeResource($roomType->refresh()->load(['hotel', 'panoramas.hotspots']))], 201);
     }
 
     public function update(Request $request, RoomType $roomType): JsonResponse
@@ -88,7 +88,7 @@ class RoomTypeController extends Controller
         $roomType->update($this->validated($request, $roomType));
         $this->applyPanorama($request, $roomType);
 
-        return response()->json(['roomType' => new RoomTypeResource($roomType->refresh()->load(['hotel', 'panoramas']))]);
+        return response()->json(['roomType' => new RoomTypeResource($roomType->refresh()->load(['hotel', 'panoramas.hotspots']))]);
     }
 
     public function destroy(Request $request, RoomType $roomType): JsonResponse

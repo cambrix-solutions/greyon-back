@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -15,6 +16,7 @@ class RoomTypePanorama extends Model
     protected $fillable = [
         'room_type_id',
         'path',
+        'caption',
         'is_published',
         'sort_order',
     ];
@@ -28,12 +30,40 @@ class RoomTypePanorama extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (RoomTypePanorama $panorama) {
+            $panorama->hotspots()->delete();
+            $panorama->incomingHotspots()->delete();
+        });
+    }
+
     /**
      * @return BelongsTo<RoomType, $this>
      */
     public function roomType(): BelongsTo
     {
         return $this->belongsTo(RoomType::class);
+    }
+
+    /**
+     * Hotspots drawn on this photo.
+     *
+     * @return HasMany<RoomTypePanoramaHotspot, $this>
+     */
+    public function hotspots(): HasMany
+    {
+        return $this->hasMany(RoomTypePanoramaHotspot::class, 'panorama_id')->orderBy('id');
+    }
+
+    /**
+     * Hotspots on other photos that jump here.
+     *
+     * @return HasMany<RoomTypePanoramaHotspot, $this>
+     */
+    public function incomingHotspots(): HasMany
+    {
+        return $this->hasMany(RoomTypePanoramaHotspot::class, 'target_panorama_id');
     }
 
     /**

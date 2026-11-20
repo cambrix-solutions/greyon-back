@@ -81,10 +81,24 @@ class RoomTypePanoramaController extends Controller
         $this->assertBelongs($roomType, $panorama);
 
         $data = $request->validate([
-            'isPublished' => ['required', 'boolean'],
+            'isPublished' => ['sometimes', 'boolean'],
+            'caption' => ['sometimes', 'nullable', 'string', 'max:80'],
         ]);
 
-        $panorama->update(['is_published' => $data['isPublished']]);
+        if (! $request->exists('isPublished') && ! $request->exists('caption')) {
+            abort(422, 'Provide a caption or a published flag.');
+        }
+
+        $updates = [];
+        if (array_key_exists('isPublished', $data)) {
+            $updates['is_published'] = $data['isPublished'];
+        }
+        if (array_key_exists('caption', $data)) {
+            $caption = is_string($data['caption']) ? trim($data['caption']) : $data['caption'];
+            $updates['caption'] = $caption === '' || $caption === null ? null : $caption;
+        }
+
+        $panorama->update($updates);
         $roomType->syncLegacyPanorama();
 
         return $this->listing($roomType);
@@ -137,7 +151,9 @@ class RoomTypePanoramaController extends Controller
     private function listing(RoomType $roomType, int $status = 200): JsonResponse
     {
         return response()->json([
-            'panoramas' => RoomTypePanoramaResource::collection($roomType->panoramas()->get())->resolve(),
+            'panoramas' => RoomTypePanoramaResource::collection(
+                $roomType->panoramas()->with('hotspots')->get()
+            )->resolve(),
         ], $status);
     }
 

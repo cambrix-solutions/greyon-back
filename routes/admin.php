@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\MediaItemController;
 use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\QuickReservationController;
 use App\Http\Controllers\Admin\RateCalendarController;
 use App\Http\Controllers\Admin\RatePlanController;
 use App\Http\Controllers\Admin\ReportController;
@@ -177,6 +178,8 @@ Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix'
     });
 
     Route::middleware('permission:bookings')->group(function () {
+        Route::get('/reservations/quick/availability', [QuickReservationController::class, 'availability'])->name('reservations.quick.availability');
+        Route::post('/reservations/quick', [QuickReservationController::class, 'store'])->name('reservations.quick.store');
         Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
         Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
         Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');

@@ -31,6 +31,8 @@ class Booking extends Model
         'total',
         'status',
         'source',
+        'payment_method',
+        'paid_at',
         'notes',
     ];
 
@@ -49,6 +51,7 @@ class Booking extends Model
             'subtotal' => 'decimal:2',
             'taxes_fees' => 'decimal:2',
             'total' => 'decimal:2',
+            'paid_at' => 'datetime',
         ];
     }
 

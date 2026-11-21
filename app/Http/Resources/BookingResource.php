@@ -2,11 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Booking
+ * @mixin Booking
  */
 class BookingResource extends JsonResource
 {
@@ -56,6 +57,8 @@ class BookingResource extends JsonResource
             'total' => $this->total !== null ? (float) $this->total : null,
             'status' => $this->status,
             'source' => $this->source,
+            'paymentMethod' => $this->payment_method,
+            'paidAt' => $this->paid_at?->toIso8601String(),
             'notes' => $this->when(! $request->routeIs('public.*', 'my.*'), $this->notes),
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),

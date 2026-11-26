@@ -180,7 +180,7 @@ class RoomTypePanoramasTest extends TestCase
         ], self::JSON)->assertStatus(422);
 
         $this->post("/admin/room-types/{$room->id}/panoramas", [
-            'panoramas' => [UploadedFile::fake()->image('big.jpg', 20, 10)->size(25601)],
+            'panoramas' => [UploadedFile::fake()->image('big.jpg', 20, 10)->size(PanoramaCompressor::MAX_UPLOAD_KB + 1)],
         ], self::JSON)->assertStatus(422);
 
         $this->assertSame(1, RoomTypePanorama::count());
@@ -380,7 +380,7 @@ class RoomTypePanoramasTest extends TestCase
         @unlink($path);
     }
 
-    public function test_limit_is_25_mb_per_photo(): void
+    public function test_limit_is_35_mb_per_photo(): void
     {
         $room = $this->room();
         $this->actingAs($this->dev(), 'developer');

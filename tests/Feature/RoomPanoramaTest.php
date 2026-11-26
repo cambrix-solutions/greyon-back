@@ -9,6 +9,7 @@ use App\Models\Hotel;
 use App\Models\Location;
 use App\Models\Package;
 use App\Models\RoomType;
+use App\Services\PanoramaCompressor;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -290,7 +291,7 @@ class RoomPanoramaTest extends TestCase
         $this->assertNull(RoomType::find($id));
     }
 
-    public function test_rejects_png_non_image_and_files_over_25mb(): void
+    public function test_rejects_png_non_image_and_files_over_the_size_limit(): void
     {
         $hotel = $this->hotel();
         $this->actingAs($this->dev(), 'developer');
@@ -313,7 +314,7 @@ class RoomPanoramaTest extends TestCase
             'hotelId' => $hotel->id,
             'name' => 'Bad',
             'slug' => 'bad',
-            'panorama' => UploadedFile::fake()->image('big.jpg', 20, 10)->size(25601),
+            'panorama' => UploadedFile::fake()->image('big.jpg', 20, 10)->size(PanoramaCompressor::MAX_UPLOAD_KB + 1),
         ], self::JSON)->assertStatus(422);
 
         $this->assertSame(0, RoomType::count());

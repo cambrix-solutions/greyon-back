@@ -23,8 +23,8 @@ use Throwable;
  */
 class PanoramaCompressor
 {
-    /** Per-file upload limit, in KB (Laravel's `max` rule unit): 25 MB. */
-    public const MAX_UPLOAD_KB = 25600;
+    /** Per-file upload limit, in KB (Laravel's `max` rule unit): 35 MB. */
+    public const MAX_UPLOAD_KB = 35840;
 
     public const MAX_WIDTH = 8192;
 

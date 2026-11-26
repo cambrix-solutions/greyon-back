@@ -2437,7 +2437,7 @@
                 "url": "{{base_url}}/admin/roles",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Front desk\",\n  \"description\": \"Reservations only\",\n  \"featureKeys\": [\n    \"bookings\",\n    \"guests\"\n  ]\n}",
+                  "raw": "{\n  \"name\": \"Front desk\",\n  \"description\": \"Reservations only\",\n  \"features\": [\n    { \"key\": \"bookings\", \"actions\": [\"view\", \"create\", \"edit\"] },\n    { \"key\": \"guests\", \"actions\": [\"view\"] }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2463,7 +2463,7 @@
                 "url": "{{base_url}}/admin/roles/{{custom_role_id}}",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Front desk\",\n  \"description\": \"Reservations and guests\",\n  \"featureKeys\": [\n    \"bookings\",\n    \"guests\",\n    \"reports\"\n  ]\n}",
+                  "raw": "{\n  \"name\": \"Front desk\",\n  \"description\": \"Reservations and guests\",\n  \"features\": [\n    { \"key\": \"bookings\", \"actions\": [\"view\", \"create\", \"edit\"] },\n    { \"key\": \"guests\", \"actions\": [\"view\"] },\n    { \"key\": \"reports\", \"actions\": [\"view\"] }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"

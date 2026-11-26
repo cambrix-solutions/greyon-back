@@ -25,6 +25,7 @@ class PageTest extends TestCase
             '2026_09_14_000005_create_packages_table',
             '2026_09_14_000006_create_package_role_table',
             '2026_09_14_000007_create_package_feature_table',
+            '2026_11_20_000400_add_actions_to_package_feature_table',
             '2026_09_14_000008_create_admin_package_table',
             '2026_09_16_000001_create_package_limits_table',
             '2026_09_16_000003_create_permissions_table',
@@ -67,6 +68,16 @@ class PageTest extends TestCase
             ],
             'status' => 'published',
         ], $over);
+    }
+
+    public function test_public_shows_only_published_pages(): void
+    {
+        Page::create(['slug' => 'terms', 'title' => 'Terms', 'blocks' => [['type' => 'paragraph', 'text' => 'T']], 'status' => 'published', 'is_system' => true]);
+        Page::create(['slug' => 'privacy', 'title' => 'Privacy', 'blocks' => [], 'status' => 'draft', 'is_system' => true]);
+
+        $this->getJson('/pages/terms', self::JSON)->assertOk()->assertJsonPath('page.title', 'Terms');
+        $this->getJson('/pages/privacy', self::JSON)->assertNotFound();
+        $this->getJson('/pages', self::JSON)->assertOk()->assertJsonCount(1, 'pages')->assertJsonPath('pages.0.slug', 'terms');
     }
 
     public function test_admin_creates_a_page_with_blocks(): void

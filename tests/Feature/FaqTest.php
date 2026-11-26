@@ -25,6 +25,7 @@ class FaqTest extends TestCase
             '2026_09_14_000005_create_packages_table',
             '2026_09_14_000006_create_package_role_table',
             '2026_09_14_000007_create_package_feature_table',
+            '2026_11_20_000400_add_actions_to_package_feature_table',
             '2026_09_14_000008_create_admin_package_table',
             '2026_09_16_000001_create_package_limits_table',
             '2026_09_16_000003_create_permissions_table',
@@ -58,7 +59,7 @@ class FaqTest extends TestCase
         $this->assertSame('draft', $page->status);
     }
 
-    public function test_admin_writes_faq_blocks(): void
+    public function test_admin_writes_faq_blocks_and_public_reads_them(): void
     {
         $admin = $this->admin();
         $page = Page::where('slug', 'faq')->first();
@@ -74,7 +75,7 @@ class FaqTest extends TestCase
             ],
         ], self::JSON)->assertOk();
 
-        $blocks = $this->getJson("/admin/pages/{$page->id}", self::JSON)->assertOk()->json('page.blocks');
+        $blocks = $this->getJson('/pages/faq', self::JSON)->assertOk()->json('page.blocks');
         $this->assertSame('faq', $blocks[1]['type']);
         $this->assertCount(2, $blocks[1]['items']);
         $this->assertSame(['question', 'answer'], array_keys($blocks[1]['items'][0]));

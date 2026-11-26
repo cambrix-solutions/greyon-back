@@ -17,7 +17,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Access -> Roles. An org admin builds their own roles ("Front desk",
- * "Accountant"...) and chooses which features each one can use.
+ * "Accountant"...) and chooses which features each one can use, and what it
+ * can do in each (view, create, edit, delete).
  *
  * A custom role is a Package (`is_system = false`, `created_by_admin_id` set)
  * - the same "seat" the People page already assigns - so People, scope
@@ -30,6 +31,10 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  *  - a role can only grant features the creating admin holds themselves
  *    (and never the developer-only `features` key), so roles cannot be used
  *    to escalate access;
+ *  - per feature, a role can only grant the actions its creator holds on it
+ *    (stored on `package_feature.actions`, enforced by the `permission`
+ *    middleware). Sending plain `featureKeys` (older clients) grants every
+ *    action the creator holds on those features;
  *  - fine-grained permissions follow the chosen features, limited to the
  *    permissions the creating admin holds (a withheld `locations_create`
  *    stays withheld);
@@ -47,11 +52,19 @@ class CustomRoleController extends Controller
 
     public function options(Request $request): JsonResponse
     {
+        $own = $this->ownActions($request);
+
         $features = $this->grantableFeatures($request)
-            ->map(fn (Feature $f) => ['key' => $f->key, 'label' => $f->label, 'description' => $f->description])
+            ->map(fn (Feature $f) => [
+                'key' => $f->key,
+                'label' => $f->label,
+                'description' => $f->description,
+                'actions' => $own[$f->key] ?? [],
+            ])
             ->values();
 
         return response()->json([
+            'actions' => AccessService::ACTIONS,
             'features' => $features,
         ]);
     }
@@ -87,7 +100,7 @@ class CustomRoleController extends Controller
             'created_by_admin_id' => $request->user('admin')->id,
         ]);
 
-        $this->syncParts($request, $package, $data['featureKeys']);
+        $this->syncParts($request, $package, $data['featureActions']);
 
         return response()->json(['role' => new PackageResource($this->load($package))], 201);
     }
@@ -105,7 +118,7 @@ class CustomRoleController extends Controller
         $this->syncParts(
             $request,
             $package,
-            $data['featureKeys'] ?? $package->features()->pluck('key')->all(),
+            $data['featureActions'] ?? $this->currentActions($package),
         );
 
         return response()->json(['role' => new PackageResource($this->load($package))]);
@@ -147,9 +160,28 @@ class CustomRoleController extends Controller
         $data = $request->validate([
             'name' => [$package ? 'sometimes' : 'required', 'string', 'max:255', Rule::unique('packages', 'name')->ignore($package?->id)],
             'description' => ['nullable', 'string', 'max:1000'],
-            'featureKeys' => [$package ? 'sometimes' : 'required', 'array', 'min:1'],
+            'featureKeys' => [$package ? 'sometimes' : 'required_without:features', 'array', 'min:1'],
             'featureKeys.*' => ['string', 'distinct'],
+            'features' => ['sometimes', 'array', 'min:1'],
+            'features.*.key' => ['required', 'string', 'distinct'],
+            'features.*.actions' => ['required', 'array', 'min:1'],
+            'features.*.actions.*' => ['string', Rule::in(AccessService::ACTIONS)],
         ]);
+
+        $own = $this->ownActions($request);
+
+        if (isset($data['features'])) {
+            $data['featureActions'] = [];
+            foreach ($data['features'] as $row) {
+                $data['featureActions'][$row['key']] = AccessService::normaliseActions($row['actions']);
+            }
+            $data['featureKeys'] = array_keys($data['featureActions']);
+        } elseif (isset($data['featureKeys'])) {
+            $data['featureActions'] = [];
+            foreach ($data['featureKeys'] as $key) {
+                $data['featureActions'][$key] = $own[$key] ?? [];
+            }
+        }
 
         if (isset($data['featureKeys'])) {
             $allowed = $this->grantableFeatures($request)->pluck('key')->all();
@@ -160,9 +192,41 @@ class CustomRoleController extends Controller
                     'featureKeys' => 'You can only give a role features you have yourself. Not allowed: '.implode(', ', $denied).'.',
                 ]);
             }
+
+            foreach ($data['featureActions'] as $key => $actions) {
+                $extra = array_values(array_diff($actions, $own[$key] ?? []));
+
+                if ($extra !== []) {
+                    throw ValidationException::withMessages([
+                        'features' => "You can only give a role actions you have yourself. Not allowed on {$key}: ".implode(', ', $extra).'.',
+                    ]);
+                }
+            }
         }
 
         return $data;
+    }
+
+    /**
+     * Feature key => actions the logged-in admin holds.
+     *
+     * @return array<string, list<string>>
+     */
+    private function ownActions(Request $request): array
+    {
+        return $this->access->effectiveFeatureActions($request->user('admin'));
+    }
+
+    /**
+     * Feature key => actions this role grants today.
+     *
+     * @return array<string, list<string>>
+     */
+    private function currentActions(Package $package): array
+    {
+        return $package->features()->get()
+            ->mapWithKeys(fn (Feature $f) => [$f->key => AccessService::normaliseActions($f->pivot?->actions)])
+            ->all();
     }
 
     /**
@@ -183,9 +247,9 @@ class CustomRoleController extends Controller
     }
 
     /**
-     * @param  list<string>  $featureKeys
+     * @param  array<string, list<string>>  $featureActions  feature key => actions
      */
-    private function syncParts(Request $request, Package $package, array $featureKeys): void
+    private function syncParts(Request $request, Package $package, array $featureActions): void
     {
         $roleIds = Role::whereIn('name', self::CARRIER_ROLES)->pluck('id')->all();
 
@@ -193,9 +257,17 @@ class CustomRoleController extends Controller
             throw new HttpException(500, 'The "manager" and "hotel_admin" base roles are required. Run the seeders.');
         }
 
+        $featureKeys = array_keys($featureActions);
+        $ids = Feature::whereIn('key', $featureKeys)->pluck('id', 'key');
+
         $package->roles()->sync($roleIds);
 
-        $package->features()->sync(Feature::whereIn('key', $featureKeys)->pluck('id'));
+        $package->features()->sync(
+            collect($featureActions)
+                ->filter(fn ($actions, $key) => isset($ids[$key]))
+                ->mapWithKeys(fn ($actions, $key) => [$ids[$key] => ['actions' => json_encode(array_values($actions))]])
+                ->all()
+        );
 
         $ownPermissions = $this->access->effectivePermissionKeys($request->user('admin'));
         $package->permissions()->sync(

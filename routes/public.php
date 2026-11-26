@@ -8,6 +8,7 @@ use App\Http\Controllers\Public\HeroSlideController;
 use App\Http\Controllers\Public\HotelController;
 use App\Http\Controllers\Public\LocationController;
 use App\Http\Controllers\Public\NewsController;
+use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\SiteSettingController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,5 +43,9 @@ Route::get('/news/{slug}', [NewsController::class, 'show'])->name('public.news.s
 Route::post('/enquiries', [EnquiryController::class, 'store'])->name('public.enquiries.store');
 
 Route::get('/settings', SiteSettingController::class)->name('public.settings');
+
+// Published CMS pages (privacy, terms, FAQ...). A draft is a 404 so the site keeps its built-in text.
+Route::get('/pages', [PageController::class, 'index'])->name('public.pages.index');
+Route::get('/pages/{slug}', [PageController::class, 'show'])->name('public.pages.show');
 
 Route::get('/hero-slides', [HeroSlideController::class, 'index'])->name('public.hero-slides.index');

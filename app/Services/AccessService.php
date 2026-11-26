@@ -139,6 +139,85 @@ class AccessService
         return in_array($permissionKey, $this->effectivePermissionKeys($admin), true);
     }
 
+    /** The actions a role can grant on a feature, in display order. */
+    public const ACTIONS = ['view', 'create', 'edit', 'delete'];
+
+    /**
+     * Normalise a `package_feature.actions` value. `null` (every seat made
+     * before per-feature actions existed) means all actions; `view` is always
+     * implied by any other action.
+     *
+     * @return list<string>
+     */
+    public static function normaliseActions(mixed $raw): array
+    {
+        if (is_string($raw)) {
+            $raw = json_decode($raw, true);
+        }
+
+        if (! is_array($raw)) {
+            return self::ACTIONS;
+        }
+
+        $actions = array_values(array_intersect(self::ACTIONS, $raw));
+
+        return $actions === [] ? [] : array_values(array_unique(['view', ...$actions]));
+    }
+
+    /**
+     * Feature key => actions this admin holds, unioned across their packages
+     * (most generous wins, same as effectiveFeatureKeys()).
+     *
+     * @return array<string, list<string>>
+     */
+    public function effectiveFeatureActions(Admin $admin): array
+    {
+        $map = [];
+
+        foreach ($admin->packages->loadMissing('features') as $package) {
+            foreach ($package->features as $feature) {
+                $actions = self::normaliseActions($feature->pivot?->actions ?? null);
+                $map[$feature->key] = array_merge($map[$feature->key] ?? [], $actions);
+            }
+        }
+
+        return array_map(
+            fn (array $actions) => array_values(array_intersect(self::ACTIONS, array_unique($actions))),
+            $map
+        );
+    }
+
+    /** True if the admin holds `$featureKey` with `$action` (view|create|edit|delete). */
+    public function canAction(Admin $admin, string $featureKey, string $action): bool
+    {
+        return in_array($action, $this->effectiveFeatureActions($admin)[$featureKey] ?? [], true);
+    }
+
+    /**
+     * The action an admin API request needs: reads are `view`, POST is
+     * `create`, PUT/PATCH is `edit`, DELETE is `delete`. POST endpoints that
+     * change existing rows (upsert, reorder) count as `edit`.
+     */
+    public static function actionForRequest(string $method, ?string $routeName = null): string
+    {
+        $method = strtoupper($method);
+
+        if (in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
+            return 'view';
+        }
+
+        if ($method === 'DELETE') {
+            return 'delete';
+        }
+
+        if ($method === 'POST') {
+            $name = (string) $routeName;
+
+            return str_ends_with($name, '.upsert') || str_ends_with($name, '.reorder') ? 'edit' : 'create';
+        }
+
+        return 'edit';
+    }
     /**
      * True if any of this admin's effective roles is flagged
      * `is_global` — sees everything regardless of any package's

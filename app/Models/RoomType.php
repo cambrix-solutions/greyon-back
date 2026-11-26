@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * A room category under a Hotel ("Deluxe King", "Standard Twin", ...)
@@ -55,26 +54,34 @@ class RoomType extends Model
     }
 
     /**
-     * Absolute URL for the optional 360° panorama, or null when unset.
-     * `panorama_path` may be a public-disk path (uploads/rooms/...) or an http(s) URL.
+     * Absolute URL for the legacy single 360° photo, or null when unset.
+     * The column mirrors the first published panorama (see
+     * syncLegacyPanorama) so older clients keep working.
      */
     public function panoramaUrl(): ?string
     {
-        $path = $this->panorama_path;
-        if (! is_string($path) || $path === '') {
-            return null;
-        }
+        return RoomTypePanorama::urlFor($this->panorama_path);
+    }
 
-        if (preg_match('#^https?://#i', $path)) {
-            return $path;
-        }
+    /**
+     * All 360° photos, in the order guests see them.
+     *
+     * @return HasMany<RoomTypePanorama, $this>
+     */
+    public function panoramas(): HasMany
+    {
+        return $this->hasMany(RoomTypePanorama::class)->orderBy('sort_order')->orderBy('id');
+    }
 
-        $url = Storage::disk('public')->url(ltrim($path, '/'));
-        if (! str_starts_with($url, 'http')) {
-            $url = rtrim((string) config('app.url'), '/').'/'.ltrim($url, '/');
-        }
+    /**
+     * Point the legacy `panorama_path` column at the first published
+     * panorama (or null when none is published).
+     */
+    public function syncLegacyPanorama(): void
+    {
+        $first = $this->panoramas()->where('is_published', true)->first();
 
-        return $url;
+        $this->forceFill(['panorama_path' => $first?->path])->save();
     }
 
     /**

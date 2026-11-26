@@ -9,6 +9,7 @@ use App\Models\Hotel;
 use App\Models\Location;
 use App\Models\Package;
 use App\Models\RoomType;
+use App\Services\PanoramaCompressor;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -35,6 +36,8 @@ class RoomPanoramaTest extends TestCase
             '2026_09_30_000300_add_nearby_landmarks_to_hotels_table.php',
             '2026_09_15_000003_create_room_types_table.php',
             '2026_11_04_000100_add_panorama_path_to_room_types_table.php',
+            '2026_11_20_000300_create_room_type_panoramas_table.php',
+            '2026_11_20_000600_add_captions_and_hotspots_to_panoramas.php',
             '2026_09_15_000004_create_rate_plans_table.php',
             '2026_09_19_000001_create_ops_and_cms_tables.php',
             '2026_09_27_000200_add_location_id_to_news_table.php',
@@ -131,7 +134,7 @@ class RoomPanoramaTest extends TestCase
 
         $this->assertIsString($path);
         $this->assertStringStartsWith("uploads/rooms/{$id}/", $path);
-        $this->assertStringEndsWith('.jpg', $path);
+        $this->assertMatchesRegularExpression('/\.(jpg|webp)$/', $path);
         Storage::disk('public')->assertExists($path);
 
         $url = $this->publicUrl($path);
@@ -194,7 +197,7 @@ class RoomPanoramaTest extends TestCase
         ], self::JSON)->assertOk();
 
         $path = RoomType::findOrFail($id)->panorama_path;
-        $this->assertStringEndsWith('.jpg', $path);
+        $this->assertMatchesRegularExpression('/\.(jpg|webp)$/', $path);
         $withFile->assertJsonPath('roomType.panoramaUrl', $this->publicUrl($path));
 
         $this->patchJson("/admin/room-types/{$id}", ['description' => 'Quiet twin.'])
@@ -288,7 +291,7 @@ class RoomPanoramaTest extends TestCase
         $this->assertNull(RoomType::find($id));
     }
 
-    public function test_rejects_png_non_image_and_files_over_15mb(): void
+    public function test_rejects_png_non_image_and_files_over_the_size_limit(): void
     {
         $hotel = $this->hotel();
         $this->actingAs($this->dev(), 'developer');
@@ -311,7 +314,7 @@ class RoomPanoramaTest extends TestCase
             'hotelId' => $hotel->id,
             'name' => 'Bad',
             'slug' => 'bad',
-            'panorama' => UploadedFile::fake()->image('big.jpg', 20, 10)->size(15361),
+            'panorama' => UploadedFile::fake()->image('big.jpg', 20, 10)->size(PanoramaCompressor::MAX_UPLOAD_KB + 1),
         ], self::JSON)->assertStatus(422);
 
         $this->assertSame(0, RoomType::count());

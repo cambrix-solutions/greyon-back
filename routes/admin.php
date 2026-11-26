@@ -22,11 +22,14 @@ use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\MediaItemController;
 use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\Admin\PageController;
-use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\QuickReservationController;
 use App\Http\Controllers\Admin\RateCalendarController;
 use App\Http\Controllers\Admin\RatePlanController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RoomTypeController;
+use App\Http\Controllers\Admin\RoomTypePanoramaController;
+use App\Http\Controllers\Admin\RoomTypePanoramaHotspotController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SiteSettingController;
 use App\Http\Controllers\Admin\TeamController;
@@ -138,6 +141,18 @@ Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix'
         Route::get('/room-types/{roomType}', [RoomTypeController::class, 'show'])->name('room-types.show');
         Route::patch('/room-types/{roomType}', [RoomTypeController::class, 'update'])->name('room-types.update');
         Route::delete('/room-types/{roomType}', [RoomTypeController::class, 'destroy'])->name('room-types.destroy');
+
+        // 360° photos: many per room, published flag + order.
+        Route::get('/room-types/{roomType}/panoramas', [RoomTypePanoramaController::class, 'index'])->name('room-types.panoramas.index');
+        Route::post('/room-types/{roomType}/panoramas', [RoomTypePanoramaController::class, 'store'])->name('room-types.panoramas.store');
+        Route::patch('/room-types/{roomType}/panoramas/reorder', [RoomTypePanoramaController::class, 'reorder'])->name('room-types.panoramas.reorder');
+        Route::patch('/room-types/{roomType}/panoramas/{panorama}', [RoomTypePanoramaController::class, 'update'])->name('room-types.panoramas.update');
+        Route::delete('/room-types/{roomType}/panoramas/{panorama}', [RoomTypePanoramaController::class, 'destroy'])->name('room-types.panoramas.destroy');
+
+        Route::get('/room-types/{roomType}/panoramas/{panorama}/hotspots', [RoomTypePanoramaHotspotController::class, 'index'])->name('room-types.panoramas.hotspots.index');
+        Route::post('/room-types/{roomType}/panoramas/{panorama}/hotspots', [RoomTypePanoramaHotspotController::class, 'store'])->name('room-types.panoramas.hotspots.store');
+        Route::patch('/room-types/{roomType}/panoramas/{panorama}/hotspots/{hotspot}', [RoomTypePanoramaHotspotController::class, 'update'])->name('room-types.panoramas.hotspots.update');
+        Route::delete('/room-types/{roomType}/panoramas/{panorama}/hotspots/{hotspot}', [RoomTypePanoramaHotspotController::class, 'destroy'])->name('room-types.panoramas.hotspots.destroy');
     });
 
     Route::middleware('permission:rates')->group(function () {
@@ -163,6 +178,8 @@ Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix'
     });
 
     Route::middleware('permission:bookings')->group(function () {
+        Route::get('/reservations/quick/availability', [QuickReservationController::class, 'availability'])->name('reservations.quick.availability');
+        Route::post('/reservations/quick', [QuickReservationController::class, 'store'])->name('reservations.quick.store');
         Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
         Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
         Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
@@ -174,6 +191,7 @@ Route::group(['middleware' => ['auth:admin,developer', 'admin.active'], 'prefix'
     Route::middleware('permission:guests')->group(function () {
         Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
         Route::get('/guests/profile', [GuestController::class, 'show'])->name('guests.show');
+        Route::get('/guests/export', [GuestController::class, 'export'])->name('guests.export');
         Route::put('/guests/note', [GuestController::class, 'note'])->name('guests.note');
     });
 

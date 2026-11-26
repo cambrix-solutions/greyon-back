@@ -11,6 +11,7 @@ use App\Models\RoomType;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -45,6 +46,40 @@ class BookingService
         ?string $locationSlug = null,
         ?string $hotelSlug = null,
     ): array {
+        return array_values(array_filter(
+            $this->quotes($checkIn, $checkOut, $rooms, $adults, $children, $locationSlug, $hotelSlug, includeSoldOut: false),
+            fn (array $row) => ! $row['soldOut'],
+        ));
+    }
+
+    /**
+     * Shared stay quotes used by public search and the admin quick-book
+     * inventory. Set includeSoldOut to keep rooms that have no free units
+     * (availableUnits may be 0). Pricing is always server-side.
+     *
+     * @return list<array{
+     *   hotel: Hotel,
+     *   roomType: RoomType,
+     *   ratePlan: RatePlan,
+     *   nights: int,
+     *   availableUnits: int,
+     *   soldOut: bool,
+     *   nightly: float,
+     *   subtotal: float,
+     *   taxesFees: float,
+     *   total: float
+     * }>
+     */
+    public function quotes(
+        string $checkIn,
+        string $checkOut,
+        int $rooms,
+        int $adults,
+        int $children,
+        ?string $locationSlug = null,
+        ?string $hotelSlug = null,
+        bool $includeSoldOut = false,
+    ): array {
         $this->assertDates($checkIn, $checkOut);
 
         $nightDates = $this->eachNight($checkIn, $checkOut);
@@ -68,6 +103,7 @@ class BookingService
 
         $hotelIds = $hotels->pluck('id');
         $roomTypes = RoomType::query()
+            ->with(['panoramas' => fn ($query) => $query->where('is_published', true)])
             ->where('status', 'published')
             ->whereIn('hotel_id', $hotelIds)
             ->get()
@@ -108,6 +144,7 @@ class BookingService
 
                 foreach ($ratePlans->get($room->id, collect()) as $plan) {
                     $blocked = false;
+                    $stayBlocked = false;
                     $availableUnits = PHP_INT_MAX;
                     $nightTotal = 0.0;
 
@@ -122,38 +159,44 @@ class BookingService
                         $free = $units - $booked;
                         if ($free < $rooms) {
                             $blocked = true;
-                            break;
                         }
 
-                        $availableUnits = min($availableUnits, $free);
+                        $availableUnits = min($availableUnits, max(0, $free));
 
                         $calKey = $plan->id.'|'.$date;
                         $cal = $calendars->get($calKey)?->first();
                         if ($cal?->min_stay && $nights < $cal->min_stay) {
-                            $blocked = true;
+                            $stayBlocked = true;
                             break;
                         }
                         if ($cal?->max_stay && $nights > $cal->max_stay) {
-                            $blocked = true;
+                            $stayBlocked = true;
                             break;
                         }
 
                         $nightTotal += (float) ($cal?->price ?? $plan->base_price);
                     }
 
-                    if ($blocked || $availableUnits === PHP_INT_MAX) {
+                    if (($stayBlocked ?? false) || $availableUnits === PHP_INT_MAX) {
+                        continue;
+                    }
+
+                    if ($blocked && ! $includeSoldOut) {
                         continue;
                     }
 
                     $subtotal = $nightTotal * $rooms;
                     $taxesFees = $subtotal * (((float) $plan->tax_percent + (float) $plan->service_fee_percent) / 100);
+                    $nightly = $nights > 0 ? round($subtotal / $nights / max(1, $rooms), 2) : 0.0;
 
                     $results[] = [
                         'hotel' => $hotel,
                         'roomType' => $room,
                         'ratePlan' => $plan,
                         'nights' => $nights,
-                        'availableUnits' => $availableUnits,
+                        'availableUnits' => $blocked ? 0 : $availableUnits,
+                        'soldOut' => $blocked,
+                        'nightly' => $nightly,
                         'subtotal' => round($subtotal, 2),
                         'taxesFees' => round($taxesFees, 2),
                         'total' => round($subtotal + $taxesFees, 2),
@@ -166,22 +209,89 @@ class BookingService
     }
 
     /**
+     * Room types at a hotel for the stay, including sold-out ones, priced
+     * with the same nightly / tax maths as search(). One row per room type
+     * (the cheapest published plan that still has units, or the cheapest
+     * plan if every plan is sold out).
+     *
+     * @return list<array{
+     *   hotel: Hotel,
+     *   roomType: RoomType,
+     *   ratePlan: RatePlan,
+     *   nights: int,
+     *   availableUnits: int,
+     *   soldOut: bool,
+     *   nightly: float,
+     *   subtotal: float,
+     *   taxesFees: float,
+     *   total: float
+     * }>
+     */
+    public function inventoryForHotel(
+        int $hotelId,
+        string $checkIn,
+        string $checkOut,
+        int $rooms,
+        int $adults,
+        int $children,
+    ): array {
+        $hotel = Hotel::query()->with('location')->find($hotelId);
+        if (! $hotel) {
+            throw new HttpException(404, 'Hotel not found.');
+        }
+
+        $quotes = $this->quotes(
+            $checkIn,
+            $checkOut,
+            $rooms,
+            $adults,
+            $children,
+            hotelSlug: $hotel->slug,
+            includeSoldOut: true,
+        );
+
+        $best = [];
+        foreach ($quotes as $row) {
+            $id = (int) $row['roomType']->id;
+            $current = $best[$id] ?? null;
+            if ($current === null) {
+                $best[$id] = $row;
+
+                continue;
+            }
+            // Prefer a plan that still has rooms; otherwise the cheaper total.
+            if ($current['soldOut'] && ! $row['soldOut']) {
+                $best[$id] = $row;
+
+                continue;
+            }
+            if ($current['soldOut'] === $row['soldOut'] && $row['total'] < $current['total']) {
+                $best[$id] = $row;
+            }
+        }
+
+        return array_values($best);
+    }
+
+    /**
      * @param  array{
      *   hotel_id: int,
      *   room_type_id: int,
-     *   rate_plan_id: int,
+     *   rate_plan_id?: int,
      *   check_in: string,
      *   check_out: string,
      *   rooms: int,
      *   adults: int,
      *   children: int,
      *   guest_full_name: string,
-     *   guest_email: string,
+     *   guest_email?: string|null,
      *   guest_phone: string,
      *   special_requests?: string|null,
      *   source?: string,
      *   notes?: string|null,
-     *   status?: string
+     *   status?: string,
+     *   payment_method?: string|null,
+     *   paid_at?: \DateTimeInterface|string|null
      * }  $input
      */
     public function create(array $input): Booking
@@ -191,63 +301,87 @@ class BookingService
             throw new HttpException(404, 'Hotel not found.');
         }
 
-        $matches = $this->search(
-            $input['check_in'],
-            $input['check_out'],
-            $input['rooms'],
-            $input['adults'],
-            $input['children'],
-            null,
-            $hotel->slug,
-        );
+        return DB::transaction(function () use ($input, $hotel) {
+            RoomType::query()->whereKey($input['room_type_id'])->lockForUpdate()->first();
 
-        $match = collect($matches)->first(fn (array $row) => (int) $row['hotel']->id === (int) $input['hotel_id']
-            && (int) $row['roomType']->id === (int) $input['room_type_id']
-            && (int) $row['ratePlan']->id === (int) $input['rate_plan_id']);
-
-        if (! $match) {
-            throw new HttpException(409, 'Selected room is no longer available for these dates.');
-        }
-
-        $booking = Booking::create([
-            'user_id' => $input['user_id'] ?? null,
-            'reference' => $this->generateReference(),
-            'hotel_id' => $input['hotel_id'],
-            'room_type_id' => $input['room_type_id'],
-            'rate_plan_id' => $input['rate_plan_id'],
-            'check_in' => $input['check_in'],
-            'check_out' => $input['check_out'],
-            'rooms' => $input['rooms'],
-            'adults' => $input['adults'],
-            'children' => $input['children'],
-            'guest_full_name' => $input['guest_full_name'],
-            'guest_email' => strtolower(trim((string) $input['guest_email'])),
-            'guest_phone' => $input['guest_phone'],
-            'special_requests' => $input['special_requests'] ?? null,
-            'subtotal' => $match['subtotal'],
-            'taxes_fees' => $match['taxesFees'],
-            'total' => $match['total'],
-            'status' => $input['status'] ?? 'pending',
-            'source' => $input['source'] ?? 'website',
-            'notes' => $input['notes'] ?? null,
-        ]);
-
-        Log::info('Booking created (mail skipped)', [
-            'reference' => $booking->reference,
-            'guestEmail' => $booking->guest_email,
-            'total' => $booking->total,
-        ]);
-
-        if (! empty($input['user_id'])) {
-            $user = User::query()->find($input['user_id']);
-            if ($user) {
-                $this->syncProfilePhoneFromGuest($user, (string) ($input['guest_phone'] ?? ''));
+            $ratePlanId = isset($input['rate_plan_id']) ? (int) $input['rate_plan_id'] : 0;
+            if ($ratePlanId < 1) {
+                $pick = collect($this->inventoryForHotel(
+                    (int) $input['hotel_id'],
+                    $input['check_in'],
+                    $input['check_out'],
+                    $input['rooms'],
+                    $input['adults'],
+                    $input['children'],
+                ))->first(fn (array $row) => (int) $row['roomType']->id === (int) $input['room_type_id']
+                    && ! $row['soldOut']);
+                if (! $pick) {
+                    throw new HttpException(409, 'Selected room is no longer available for these dates.');
+                }
+                $ratePlanId = (int) $pick['ratePlan']->id;
+                $input['rate_plan_id'] = $ratePlanId;
             }
-        }
 
-        $this->notifications->notifyCreated($booking->fresh(['hotel.location']) ?? $booking);
+            $matches = $this->search(
+                $input['check_in'],
+                $input['check_out'],
+                $input['rooms'],
+                $input['adults'],
+                $input['children'],
+                null,
+                $hotel->slug,
+            );
 
-        return $booking;
+            $match = collect($matches)->first(fn (array $row) => (int) $row['hotel']->id === (int) $input['hotel_id']
+                && (int) $row['roomType']->id === (int) $input['room_type_id']
+                && (int) $row['ratePlan']->id === $ratePlanId);
+
+            if (! $match) {
+                throw new HttpException(409, 'Selected room is no longer available for these dates.');
+            }
+
+            $booking = Booking::create([
+                'user_id' => $input['user_id'] ?? null,
+                'reference' => $this->generateReference(),
+                'hotel_id' => $input['hotel_id'],
+                'room_type_id' => $input['room_type_id'],
+                'rate_plan_id' => $input['rate_plan_id'],
+                'check_in' => $input['check_in'],
+                'check_out' => $input['check_out'],
+                'rooms' => $input['rooms'],
+                'adults' => $input['adults'],
+                'children' => $input['children'],
+                'guest_full_name' => $input['guest_full_name'],
+                'guest_email' => strtolower(trim((string) ($input['guest_email'] ?? ''))),
+                'guest_phone' => $input['guest_phone'],
+                'special_requests' => $input['special_requests'] ?? null,
+                'subtotal' => $match['subtotal'],
+                'taxes_fees' => $match['taxesFees'],
+                'total' => $match['total'],
+                'status' => $input['status'] ?? 'pending',
+                'source' => $input['source'] ?? 'website',
+                'payment_method' => $input['payment_method'] ?? null,
+                'paid_at' => $input['paid_at'] ?? null,
+                'notes' => $input['notes'] ?? null,
+            ]);
+
+            Log::info('Booking created (mail skipped)', [
+                'reference' => $booking->reference,
+                'guestEmail' => $booking->guest_email,
+                'total' => $booking->total,
+            ]);
+
+            if (! empty($input['user_id'])) {
+                $user = User::query()->find($input['user_id']);
+                if ($user) {
+                    $this->syncProfilePhoneFromGuest($user, (string) ($input['guest_phone'] ?? ''));
+                }
+            }
+
+            $this->notifications->notifyCreated($booking->fresh(['hotel.location']) ?? $booking);
+
+            return $booking;
+        });
     }
 
     public function findByReference(string $reference): ?Booking

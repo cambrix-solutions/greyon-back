@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Services\LocationAmenitiesBackfill;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -35,6 +36,10 @@ class DatabaseSeeder extends Seeder
 
         // Real client property (2026-10-06) — see GreyonPhnomPenhSeeder's docblock.
         $this->call(GreyonPhnomPenhSeeder::class);
+
+        // Copy real hotel amenity lists onto locations still missing one.
+        // Idempotent: never overwrites a list an admin already saved (including []).
+        LocationAmenitiesBackfill::fillMissing();
 
         $this->call(AdminSeeder::class);
         $this->call(MediaSeeder::class);

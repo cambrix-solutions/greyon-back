@@ -32,7 +32,7 @@ class CatalogController extends Controller
             $locations = Location::query()
                 ->select([
                     'id', 'name', 'slug', 'description',
-                    'highlights', 'landmarks', 'phone', 'email', 'status', 'seo_title', 'seo_description',
+                    'highlights', 'amenities', 'landmarks', 'phone', 'email', 'status', 'seo_title', 'seo_description',
                     'created_by_admin_id',
                 ])
                 ->selectRaw($this->boundedImageSql('hero_image'))

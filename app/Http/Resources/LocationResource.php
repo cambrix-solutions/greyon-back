@@ -2,11 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Location;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Location
+ * @mixin Location
  */
 class LocationResource extends JsonResource
 {
@@ -25,6 +26,7 @@ class LocationResource extends JsonResource
             'heroImage' => $this->hero_image,
             'gallery' => $this->gallery ?? [],
             'highlights' => $this->highlights ?? [],
+            'amenities' => $this->amenities ?? [],
             'landmarks' => collect($this->landmarks ?? [])
                 ->map(fn ($row) => [
                     'place' => is_array($row) ? ($row['place'] ?? '') : '',

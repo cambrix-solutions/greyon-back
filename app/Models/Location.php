@@ -32,6 +32,7 @@ class Location extends Model
         'hero_image',
         'gallery',
         'highlights',
+        'amenities',
         'landmarks',
         'status',
         'seo_title',
@@ -44,6 +45,7 @@ class Location extends Model
             'created_by_admin_id' => 'integer',
             'gallery' => 'array',
             'highlights' => 'array',
+            'amenities' => 'array',
             'landmarks' => 'array',
         ];
     }

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\AuthorizesAdminPanel;
+use App\Http\Controllers\Controller;
 use App\Http\Resources\LocationResource;
 use App\Models\Admin;
 use App\Models\Location;
@@ -53,7 +53,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * the 5 gate specific fields on update(), on top of the parent
  * `locations` feature gate (still required via route middleware just
  * to reach this controller at all):
- *   - name/slug/description/phone/email/heroImage/gallery/highlights →
+ *   - name/slug/description/phone/email/heroImage/gallery/highlights/amenities →
  *     `locations_list` ("view and edit destination content")
  *   - status → `locations_publish` ("publish / archive")
  *   - seoTitle/seoDescription → `locations_seo` ("SEO fields")
@@ -199,7 +199,7 @@ class LocationController extends Controller
      */
     private function authorizeFields(Admin $admin, array $data): void
     {
-        $contentFields = ['name', 'slug', 'description', 'phone', 'email', 'hero_image', 'gallery', 'highlights', 'landmarks'];
+        $contentFields = ['name', 'slug', 'description', 'phone', 'email', 'hero_image', 'gallery', 'highlights', 'amenities', 'landmarks'];
 
         if (array_intersect($contentFields, array_keys($data)) !== [] && ! $this->access->hasPermission($admin, 'locations_list')) {
             throw new HttpException(403, 'Missing permission: locations_list');
@@ -238,6 +238,8 @@ class LocationController extends Controller
             'gallery.*' => ['string'],
             'highlights' => ['array'],
             'highlights.*' => ['string'],
+            'amenities' => ['array'],
+            'amenities.*' => ['string'],
             'landmarks' => ['array', 'max:50'],
             'landmarks.*.place' => ['required', 'string', 'max:255'],
             'landmarks.*.distance' => ['nullable', 'string', 'max:100'],
